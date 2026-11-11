@@ -13,17 +13,21 @@ Sistema web desenvolvido em **Django** com banco de dados **MariaDB / MySQL** pa
 - **Tarefas por Técnico**: distribuição da carga de trabalho ativa por profissional da equipe.
 
 ### 2. Gestão de Clientes, Filiais e Dados de Energia (`cadastros`)
-- **Cadastro de Matriz (Pessoa Jurídica)**: Razão Social, Nome Fantasia, CNPJ, Inscrição Estadual/Municipal, endereço completo e contatos.
-- **Múltiplas Filiais Dinâmicas (`+`)**: adição ilimitada de unidades/filiais vinculadas à mesma Matriz na mesma tela.
+- **Seleção de Tipo de Cliente (2 Cards)**: ao criar um novo cliente, o sistema apresenta 2 cards para escolha entre **Pessoa Física (CPF)** (com identificação simplificada de Nome e CPF) e **Pessoa Jurídica (CNPJ)**.
+- **Validação Flexível**: apenas o campo **Razão Social / Nome** é obrigatório; todos os demais campos cadastrais, de endereço, contatos, filiais e energia são opcionais.
+- **Múltiplas Filiais Dinâmicas (`+`)**: adição ilimitada de unidades/filiais vinculadas ao cliente na mesma tela.
 - **Integração com API ViaCEP**: preenchimento automático de Logradouro, Bairro, Cidade e UF ao digitar o CEP tanto na Matriz quanto em qualquer Filial.
 - **Dados de Entrada de Energia / Subestação (`+`)**: registro de Unidades Consumidoras (UC), Concessionária, Tensão de Fornecimento, Demanda Contratada (kW), Potência do Transformador (kVA) e Tipo de Subestação.
 
 ### 3. Gestão de Projetos e Ordens de Serviço (`projetos`)
-- **Identificação e Escopo**: título do escopo, previsão de entrega final, número da OS, data de abertura, status e seleção dinâmica de **Cliente (Matriz)** e **Filial de Atendimento** via AJAX.
+- **Identificação e Escopo**: título do escopo e previsão de entrega final em destaque na primeira linha, número da OS, data de abertura, status e seleção dinâmica de **Cliente** (com **botão de Lupa** para busca instantânea por nome) e **Filial de Atendimento** via AJAX.
 - **Checklist Automático por Tipo de Serviço**: ao selecionar o Tipo de Projeto (ex: *Projeto Elétrico*, *Laudo SPDA*, *Inspeção Termográfica*), a tabela de tarefas é preenchida automaticamente com as etapas padrão daquele tipo.
 - **Delegação e Conclusão de Tarefas**:
-  - Escolha do **Técnico Responsável** e **Data Programada** para cada etapa, além de inclusão de tarefas avulsas (`+`) ou exclusão de etapas não aplicáveis.
-  - **Flag de Conclusão**: cada tarefa possui uma marcação de concluída; ao marcar todas as tarefas da OS como concluídas, o sistema pergunta automaticamente se deseja alterar o status do projeto para **Concluído**.
+  - Escolha do **Técnico Responsável** e **Data Programada** para cada etapa, preservando a ordem exata da lista, além de inclusão de tarefas avulsas (`+`) ou exclusão de etapas não aplicáveis.
+  - **Flag de Conclusão**: cada tarefa possui uma marcação de concluída na primeira coluna; ao marcar todas as tarefas da OS como concluídas, o sistema pergunta automaticamente se deseja alterar o status do projeto para **Concluído**.
+- **Diário do Projeto com Anexos (até 50 MB)**:
+  - Histórico cronológico ao final da página do projeto com registro automático de data e hora (`timestamp`) de criação.
+  - Suporte para anexar **qualquer tipo de arquivo** (`.pdf`, `.dwg`, `.xlsx`, imagens, `.zip`, etc.) de até **50 MB** por arquivo, com download direto no histórico do diário.
 - **Cálculo Automático de Renovação Periódica**: para tipos de projeto configurados com validade (laudos/inspeções), o bloco de renovação é exibido automaticamente e calcula a data futura exata com base nos meses de validade.
 
 ### 4. Central de Laudos Ativos (`/projetos/laudos/`)

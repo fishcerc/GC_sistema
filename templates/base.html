@@ -4,14 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Gestão de Projetos Elétricos{% endblock %}</title>
-    <!-- Bootstrap 5 CSS -->
+
+    <!-- Bootstrap 5 CSS (Grid e componentes) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Tailwind CSS Padrão -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            corePlugins: {
+                preflight: false,
+            }
+        }
+    </script>
+    <script>
+        // Aplica o tema escolhido no Login (Claro ou Escuro)
+        (function() {
+            const temaSalvo = localStorage.getItem('tema_sistema') || 'light';
+            if (temaSalvo === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
+
     <style>
+        /* Estilo Padrão (Tema Claro) */
         body {
             min-height: 100vh;
             background-color: #f1f5f9;
+            color: #1e293b;
+            transition: background-color 0.2s ease, color 0.2s ease;
         }
         .sidebar {
             width: 260px;
@@ -21,8 +48,10 @@
         .sidebar .nav-link {
             color: #94a3b8;
             font-weight: 500;
-            border-radius: 6px;
-            margin: 4px 12px;
+            border-radius: 8px;
+            margin: 3px 8px;
+            padding: 10px 14px;
+            transition: all 0.15s ease;
         }
         .sidebar .nav-link:hover, .sidebar .nav-link.active {
             color: #ffffff;
@@ -34,21 +63,116 @@
             overflow-y: auto;
         }
         .card-custom {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
             background-color: #ffffff;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        /* Adaptação Automática para Tema Escuro (Tailwind Slate) */
+        html.dark body {
+            background-color: #0f172a;
+            color: #f1f5f9;
+        }
+        html.dark .sidebar {
+            background-color: #020617;
+            border-right: 1px solid #1e293b;
+        }
+        html.dark .card,
+        html.dark .card-custom {
+            background-color: #1e293b !important;
+            border-color: #334155 !important;
+            color: #f1f5f9 !important;
+        }
+        html.dark .text-dark {
+            color: #f8fafc !important;
+        }
+        html.dark .text-muted,
+        html.dark .text-secondary,
+        html.dark .form-text {
+            color: #94a3b8 !important;
+        }
+        html.dark .bg-light,
+        html.dark .bg-white {
+            background-color: #0f172a !important;
+            color: #f1f5f9 !important;
+        }
+        html.dark .border,
+        html.dark .border-top,
+        html.dark .border-bottom,
+        html.dark .border-start,
+        html.dark .border-end {
+            border-color: #334155 !important;
+        }
+        html.dark .form-control,
+        html.dark .form-select,
+        html.dark .input-group-text {
+            background-color: #0f172a !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+        html.dark .form-control::placeholder {
+            color: #64748b !important;
+        }
+        html.dark .table {
+            --bs-table-bg: transparent;
+            --bs-table-color: #f1f5f9;
+            --bs-table-border-color: #334155;
+            --bs-table-hover-bg: rgba(255, 255, 255, 0.04);
+            --bs-table-hover-color: #ffffff;
+            color: #f1f5f9 !important;
+        }
+        html.dark .table-light,
+        html.dark .table-light th,
+        html.dark .table thead th {
+            background-color: #0f172a !important;
+            color: #cbd5e1 !important;
+            border-color: #334155 !important;
+        }
+        html.dark .table-success,
+        html.dark tr.table-success > td {
+            background-color: rgba(16, 185, 129, 0.18) !important;
+            color: #f1f5f9 !important;
+        }
+        html.dark .list-group-item {
+            background-color: transparent !important;
+            border-color: #334155 !important;
+            color: #f1f5f9 !important;
+        }
+        html.dark .modal-content {
+            background-color: #1e293b !important;
+            border-color: #334155 !important;
+            color: #f1f5f9 !important;
+        }
+        html.dark .modal-header,
+        html.dark .modal-footer {
+            background-color: #0f172a !important;
+            border-color: #334155 !important;
+        }
+        html.dark .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+        html.dark .btn-outline-secondary,
+        html.dark .btn-outline-dark {
+            color: #cbd5e1 !important;
+            border-color: #475569 !important;
+        }
+        html.dark .btn-outline-secondary:hover,
+        html.dark .btn-outline-dark:hover {
+            background-color: #334155 !important;
+            color: #ffffff !important;
         }
     </style>
 </head>
 <body class="d-flex">
 
     <!-- Menu Lateral (Sidebar) -->
-    <aside class="sidebar d-flex flex-column p-3 text-white">
-        <h5 class="fs-5 px-3 py-2 fw-bold text-warning">
+    <aside class="sidebar d-flex flex-column p-3 text-white shrink-0">
+        <h5 class="fs-5 px-3 py-2 fw-bold text-warning mb-1">
             <i class="bi bi-lightning-charge-fill"></i> Projetos Elétricos
         </h5>
-        <hr class="border-secondary">
+        <hr class="border-secondary my-2">
         <ul class="nav nav-pills flex-column mb-auto">
             <li class="nav-item">
                 <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
@@ -76,13 +200,20 @@
                 </a>
             </li>
             <li>
-                <a href="{% url 'gerenciamento_hub' %}" class="nav-link {% if 'gerenciamento' in request.resolver_match.url_name or 'tecnico_' in request.resolver_match.url_name or 'tipo_projeto_' in request.resolver_match.url_name or 'tarefa_padrao_' in request.resolver_match.url_name or 'usuario_' in request.resolver_match.url_name %}active{% endif %}">
+                <a href="{% url 'gerenciamento_hub' %}" class="nav-link {% if 'gerenciamento' in request.resolver_match.url_name or 'tecnico_' in request.resolver_match.url_name or 'tipo_projeto_' in request.resolver_match.url_name or 'tarefa_padrao_' in request.resolver_match.url_name or 'usuario_' in request.resolver_match.url_name or 'status_projeto_' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="bi bi-gear-fill me-2"></i> Gerenciamento
                 </a>
             </li>
         </ul>
-        <hr class="border-secondary">
+
+        <hr class="border-secondary my-2">
         <div class="px-3">
+            <!-- Botão de Alternar Tema Claro / Escuro -->
+            <button type="button" id="btn-toggle-tema-sidebar" class="btn btn-sm btn-outline-light w-100 mb-3 d-flex align-items-center justify-content-center gap-2">
+                <i id="icone-tema-sidebar" class="bi bi-moon-stars-fill"></i>
+                <span id="texto-tema-sidebar">Tema Escuro</span>
+            </button>
+
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <div class="small text-light text-truncate" title="{{ request.user.username }}">
                     <i class="bi bi-person-circle text-warning me-1"></i>
@@ -110,12 +241,41 @@
         {% endif %}
 
         {% block content %}
-        <!-- Os conteúdos das outras páginas serão injetados aqui -->
         {% endblock %}
     </main>
 
-    <!-- Bootstrap 5 Bundle JS (com Popper) -->
+    <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnSidebar = document.getElementById('btn-toggle-tema-sidebar');
+            const iconeSidebar = document.getElementById('icone-tema-sidebar');
+            const textoSidebar = document.getElementById('texto-tema-sidebar');
+
+            function atualizarBotaoSidebar() {
+                if (!btnSidebar) return;
+                const ehEscuro = document.documentElement.classList.contains('dark');
+                if (ehEscuro) {
+                    iconeSidebar.className = 'bi bi-sun-fill text-warning';
+                    textoSidebar.textContent = 'Tema Claro';
+                } else {
+                    iconeSidebar.className = 'bi bi-moon-stars-fill';
+                    textoSidebar.textContent = 'Tema Escuro';
+                }
+            }
+
+            atualizarBotaoSidebar();
+
+            if (btnSidebar) {
+                btnSidebar.addEventListener('click', function() {
+                    document.documentElement.classList.toggle('dark');
+                    const ehEscuro = document.documentElement.classList.contains('dark');
+                    localStorage.setItem('tema_sistema', ehEscuro ? 'dark' : 'light');
+                    atualizarBotaoSidebar();
+                });
+            }
+        });
+    </script>
     {% block scripts %}
     {% endblock %}
 </body>

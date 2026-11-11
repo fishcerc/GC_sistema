@@ -16,7 +16,7 @@
         
         <!-- CARD 1: TÉCNICOS -->
         <div class="col-lg-4 col-md-6">
-            <div class="card card-custom h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between">
+            <div class="card card-custom h-100 p-4 d-flex flex-column justify-content-between">
                 <div>
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle">
@@ -37,10 +37,10 @@
 
         <!-- CARD 2: TIPOS DE PROJETOS -->
         <div class="col-lg-4 col-md-6">
-            <div class="card card-custom h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between">
+            <div class="card card-custom h-100 p-4 d-flex flex-column justify-content-between">
                 <div>
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div class="bg-warning bg-opacity-10 text-warning-emphasis p-3 rounded-circle">
+                        <div class="bg-warning bg-opacity-10 text-warning p-3 rounded-circle">
                             <i class="bi bi-tags-fill fs-3 text-warning"></i>
                         </div>
                         <span class="badge bg-warning text-dark fs-6">{{ total_tipos }} cadastrado(s)</span>
@@ -58,7 +58,7 @@
 
         <!-- CARD 3: TAREFAS PADRÃO -->
         <div class="col-lg-4 col-md-6">
-            <div class="card card-custom h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between">
+            <div class="card card-custom h-100 p-4 d-flex flex-column justify-content-between">
                 <div>
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle">
@@ -79,10 +79,10 @@
 
         <!-- CARD 4: USUÁRIOS DO SISTEMA -->
         <div class="col-lg-4 col-md-6">
-            <div class="card card-custom h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between">
+            <div class="card card-custom h-100 p-4 d-flex flex-column justify-content-between">
                 <div>
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div class="bg-dark bg-opacity-10 text-dark p-3 rounded-circle">
+                        <div class="bg-secondary bg-opacity-10 text-secondary p-3 rounded-circle">
                             <i class="bi bi-shield-lock-fill fs-3"></i>
                         </div>
                         <span class="badge bg-dark fs-6">{{ total_usuarios }} usuário(s)</span>
@@ -91,7 +91,7 @@
                     <p class="text-muted small">Criação de logins e senhas de acesso ao sistema para vincular aos profissionais técnicos.</p>
                 </div>
                 <div class="pt-3 border-top">
-                    <a href="{% url 'gerenciamento_usuarios' %}" class="btn btn-outline-dark w-100 fw-semibold">
+                    <a href="{% url 'gerenciamento_usuarios' %}" class="btn btn-outline-secondary w-100 fw-semibold">
                         <i class="bi bi-arrow-right-circle me-1"></i> Gerenciar Usuários
                     </a>
                 </div>
@@ -100,7 +100,7 @@
 
         <!-- CARD 5: ESTADOS DO PROJETO (STATUS) -->
         <div class="col-lg-4 col-md-6">
-            <div class="card card-custom h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between">
+            <div class="card card-custom h-100 p-4 d-flex flex-column justify-content-between">
                 <div>
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div class="bg-info bg-opacity-10 text-info p-3 rounded-circle">
