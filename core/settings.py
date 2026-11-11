@@ -124,6 +124,12 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Arquivos de Mídia / Anexos (Limite de 50 MB)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
+
 # Configurações de Autenticação
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'

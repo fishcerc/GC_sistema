@@ -1,10 +1,17 @@
 from django.contrib import admin
-from .models import TipoProjeto, Projeto, Tarefa, TarefaPadrao, Tecnico
+from .models import TipoProjeto, Projeto, Tarefa, TarefaPadrao, Tecnico, StatusProjeto, DiarioProjeto
+
+
+@admin.register(StatusProjeto)
+class StatusProjetoAdmin(admin.ModelAdmin):
+    list_display = ('ordem', 'nome', 'cor', 'eh_concluido', 'ativo')
+    list_editable = ('cor', 'eh_concluido', 'ativo')
+    ordering = ('ordem', 'nome')
 
 
 class TarefaPadraoInline(admin.TabularInline):
     model = TarefaPadrao
-    extra = 3  # Abre 3 linhas em branco para digitar os nomes rapidamente
+    extra = 3
     fields = ('ordem', 'nome', 'ativo')
 
 
@@ -30,10 +37,17 @@ class TecnicoAdmin(admin.ModelAdmin):
 class TarefaInline(admin.TabularInline):
     model = Tarefa
     extra = 0
-    fields = ('nome', 'tecnico_responsavel', 'data_agendada')
+    fields = ('concluida', 'nome', 'tecnico_responsavel', 'data_agendada')
+
+
+class DiarioProjetoInline(admin.TabularInline):
+    model = DiarioProjeto
+    extra = 0
+    readonly_fields = ('criado_em',)
+    fields = ('criado_em', 'autor', 'texto', 'arquivo')
 
 
 @admin.register(Projeto)
 class ProjetoAdmin(admin.ModelAdmin):
     list_display = ('numero_os', 'cliente', 'filial', 'tipo_projeto', 'status', 'data_abertura')
-    inlines = [TarefaInline]
+    inlines = [TarefaInline, DiarioProjetoInline]

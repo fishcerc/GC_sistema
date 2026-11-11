@@ -173,17 +173,44 @@ class ProjetoForm(forms.ModelForm):
             'filial': forms.Select(attrs={'class': 'form-select', 'id': 'select-filial'}),
             'titulo_escopo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Inspeção Anual de Subestação'}),
             'status': forms.Select(attrs={'class': 'form-select', 'id': 'select-status'}),
-            'data_abertura': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_previsao_entrega': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_abertura': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'data_previsao_entrega': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'requer_renovacao': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_requer_renovacao'}),
             'meses_validade': forms.NumberInput(attrs={'class': 'form-control', 'id': 'input-validade'}),
-            'data_alerta_renovacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'id': 'input-data-alerta'}),
+            'data_alerta_renovacao': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date', 'id': 'input-data-alerta'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['tipo_projeto'].queryset = TipoProjeto.objects.filter(ativo=True)
-        self.fields['cliente'].queryset = Cliente.objects.all().order_by('nome_fantasia')
+        self.fields['tipo_projeto'].empty_label = "Selecione o Tipo de Serviço..."
+
+        clientes_qs = Cliente.objects.all().order_by('razao_social')
+        self.fields['cliente'].queryset = clientes_qs
+        self.fields['filial'].empty_label = "Atendimento na Matriz (Sede Principal)"
+
+        cliente_selecionado_id = None
+        if self.is_bound:
+            cliente_selecionado_id = self.data.get('cliente')
+        elif self.instance and self.instance.pk and self.instance.cliente_id:
+            cliente_selecionado_id = self.instance.cliente_id
+
+        try:
+            primeiro_cliente = clientes_qs.first()
+            if primeiro_cliente:
+                self.fields['cliente'].empty_label = None
+                if not cliente_selecionado_id:
+                    cliente_selecionado_id = primeiro_cliente.pk
+                    self.initial['cliente'] = primeiro_cliente.pk
+            else:
+                self.fields['cliente'].empty_label = "Nenhum cliente cadastrado"
+        except Exception:
+            pass
+
+        if cliente_selecionado_id:
+            self.fields['filial'].queryset = Filial.objects.filter(cliente_id=cliente_selecionado_id)
+        else:
+            self.fields['filial'].queryset = Filial.objects.none()
 
         try:
             estados = list(StatusProjeto.objects.filter(ativo=True).order_by('ordem', 'nome'))

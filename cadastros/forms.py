@@ -4,6 +4,7 @@ from .models import Cliente, Filial, DadosEnergia
 
 
 class ClienteForm(forms.ModelForm):
+    """Formulário para Cliente Pessoa Jurídica (CNPJ) — apenas Razão Social é obrigatória"""
     class Meta:
         model = Cliente
         fields = [
@@ -14,7 +15,7 @@ class ClienteForm(forms.ModelForm):
             'pessoa_contato', 'email', 'telefone', 'celular'
         ]
         widgets = {
-            'razao_social': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Indústria Metalúrgica SA'}),
+            'razao_social': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Indústria Metalúrgica SA', 'required': True}),
             'nome_fantasia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Metalúrgica'}),
             'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0001-00'}),
             'inscricao_estadual': forms.TextInput(attrs={'class': 'form-control'}),
@@ -31,6 +32,60 @@ class ClienteForm(forms.ModelForm):
             'telefone': forms.TextInput(attrs={'class': 'form-control'}),
             'celular': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.required = (field_name == 'razao_social')
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.tipo_pessoa = 'PJ'
+        if not instance.nome_fantasia:
+            instance.nome_fantasia = instance.razao_social
+        if commit:
+            instance.save()
+        return instance
+
+
+class ClientePFForm(forms.ModelForm):
+    """Formulário para Cliente Pessoa Física (CPF) — baseado no CNPJ, tendo apenas Nome (obrigatório) e CPF na identificação"""
+    class Meta:
+        model = Cliente
+        fields = [
+            'razao_social', 'cnpj',
+            'logradouro', 'numero', 'complemento', 'bairro', 
+            'cidade', 'estado', 'cep',
+            'pessoa_contato', 'email', 'telefone', 'celular'
+        ]
+        widgets = {
+            'razao_social': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: João da Silva', 'required': True}),
+            'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000.000.000-00'}),
+            'logradouro': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control'}),
+            'complemento': forms.TextInput(attrs={'class': 'form-control'}),
+            'bairro': forms.TextInput(attrs={'class': 'form-control'}),
+            'cidade': forms.TextInput(attrs={'class': 'form-control'}),
+            'estado': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2'}),
+            'cep': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00000-000'}),
+            'pessoa_contato': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control'}),
+            'celular': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.required = (field_name == 'razao_social')
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.tipo_pessoa = 'PF'
+        instance.nome_fantasia = instance.razao_social
+        if commit:
+            instance.save()
+        return instance
 
 
 class FilialForm(forms.ModelForm):

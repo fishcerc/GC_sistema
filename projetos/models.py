@@ -1,3 +1,4 @@
+import os
 from django.db import models
 from django.contrib.auth.models import User
 from cadastros.models import Cliente, Filial
@@ -137,7 +138,8 @@ class Projeto(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"OS {self.numero_os} - {self.cliente.nome_fantasia}"
+        nome_cli = self.cliente.nome_fantasia or self.cliente.razao_social
+        return f"OS {self.numero_os} - {nome_cli}"
 
     @property
     def cor_status(self):
@@ -170,8 +172,31 @@ class Tarefa(models.Model):
     class Meta:
         verbose_name = "Tarefa do Projeto"
         verbose_name_plural = "Tarefas do Projeto"
-        ordering = ['data_agendada', 'id']
+        ordering = ['id']
 
     def __str__(self):
         tec = self.tecnico_responsavel.nome if self.tecnico_responsavel else "Sem técnico"
         return f"{self.nome} ({tec})"
+
+
+class DiarioProjeto(models.Model):
+    """Registros do diário de bordo / histórico do projeto com timestamp de criação e anexo"""
+    projeto = models.ForeignKey(Projeto, on_delete=models.CASCADE, related_name="diarios")
+    autor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Autor")
+    texto = models.TextField("Anotação do Diário", blank=True, default="")
+    arquivo = models.FileField("Arquivo Anexo", upload_to="diario_projetos/%Y/%m/", blank=True, null=True)
+    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Diário do Projeto"
+        verbose_name_plural = "Diários do Projeto"
+        ordering = ['-criado_em', '-id']
+
+    @property
+    def nome_arquivo(self):
+        if self.arquivo:
+            return os.path.basename(self.arquivo.name)
+        return ""
+
+    def __str__(self):
+        return f"Diário OS {self.projeto.numero_os} ({self.criado_em:%d/%m/%Y %H:%M})"

@@ -16,14 +16,14 @@ class DadosEnergiaInline(admin.TabularInline):
 
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
-    list_display = ('nome_fantasia', 'razao_social', 'cnpj', 'cidade', 'estado', 'pessoa_contato', 'celular')
+    list_display = ('razao_social', 'nome_fantasia', 'tipo_pessoa', 'cnpj', 'cidade', 'estado', 'pessoa_contato', 'celular')
     search_fields = ('nome_fantasia', 'razao_social', 'cnpj', 'cidade')
-    list_filter = ('cidade', 'estado')
+    list_filter = ('tipo_pessoa', 'cidade', 'estado')
     
     fieldsets = (
-        ('Identificação da Empresa (Matriz)', {
+        ('Identificação do Cliente (PF / PJ)', {
             'fields': (
-                ('nome_fantasia', 'razao_social'),
+                ('tipo_pessoa', 'razao_social', 'nome_fantasia'),
                 ('cnpj', 'inscricao_estadual', 'inscricao_municipal'),
             )
         }),

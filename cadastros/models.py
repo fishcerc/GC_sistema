@@ -2,39 +2,50 @@ from django.db import models
 
 
 class Cliente(models.Model):
-    """Cadastro da Pessoa Jurídica (Matriz)"""
-    razao_social = models.CharField("Razão Social", max_length=200)
-    nome_fantasia = models.CharField("Nome Fantasia", max_length=200)
-    cnpj = models.CharField("CNPJ", max_length=18, unique=True)
+    """Cadastro do Cliente (Pessoa Jurídica ou Pessoa Física)"""
+    TIPO_PESSOA_CHOICES = [
+        ('PJ', 'Pessoa Jurídica (CNPJ)'),
+        ('PF', 'Pessoa Física (CPF)'),
+    ]
+
+    tipo_pessoa = models.CharField("Tipo de Pessoa", max_length=2, choices=TIPO_PESSOA_CHOICES, default='PJ')
+    razao_social = models.CharField("Razão Social / Nome", max_length=200)
+    nome_fantasia = models.CharField("Nome Fantasia", max_length=200, blank=True, null=True)
+    cnpj = models.CharField("CNPJ / CPF", max_length=18, blank=True, null=True)
     inscricao_estadual = models.CharField("Inscrição Estadual", max_length=30, blank=True, null=True)
     inscricao_municipal = models.CharField("Inscrição Municipal", max_length=30, blank=True, null=True)
     
     # Endereço Principal (Matriz)
     cep = models.CharField("CEP", max_length=9, blank=True, null=True)
-    logradouro = models.CharField("Logradouro", max_length=200)
-    numero = models.CharField("Número", max_length=20)
+    logradouro = models.CharField("Logradouro", max_length=200, blank=True, null=True)
+    numero = models.CharField("Número", max_length=20, blank=True, null=True)
     complemento = models.CharField("Complemento", max_length=100, blank=True, null=True)
-    bairro = models.CharField("Bairro", max_length=100)
-    cidade = models.CharField("Cidade", max_length=100)
-    estado = models.CharField("UF", max_length=2, default="SC")
+    bairro = models.CharField("Bairro", max_length=100, blank=True, null=True)
+    cidade = models.CharField("Cidade", max_length=100, blank=True, null=True)
+    estado = models.CharField("UF", max_length=2, default="SC", blank=True, null=True)
     
     # Contatos
-    pessoa_contato = models.CharField("Pessoa de Contato", max_length=100)
+    pessoa_contato = models.CharField("Pessoa de Contato", max_length=100, blank=True, null=True)
     telefone = models.CharField("Telefone Fixo", max_length=20, blank=True, null=True)
-    celular = models.CharField("Celular / WhatsApp", max_length=20)
-    email = models.EmailField("E-mail")
+    celular = models.CharField("Celular / WhatsApp", max_length=20, blank=True, null=True)
+    email = models.EmailField("E-mail", blank=True, null=True)
     
     # Campo JSON para permitir novos atributos sem quebrar tabelas existentes
     dados_adicionais = models.JSONField("Campos Extras", default=dict, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "Cliente (Matriz)"
-        verbose_name_plural = "Clientes (Matrizes)"
-        ordering = ["nome_fantasia"]
+        verbose_name = "Cliente"
+        verbose_name_plural = "Clientes"
+        ordering = ["razao_social"]
 
     def __str__(self):
-        return f"{self.nome_fantasia} ({self.cidade}/{self.estado})"
+        nome = self.nome_fantasia or self.razao_social
+        if self.cidade and self.estado:
+            return f"{nome} ({self.cidade}/{self.estado})"
+        elif self.cidade:
+            return f"{nome} ({self.cidade})"
+        return nome
 
 
 class Filial(models.Model):
@@ -45,12 +56,12 @@ class Filial(models.Model):
     
     # Endereço da Filial
     cep = models.CharField("CEP", max_length=9, blank=True, null=True)
-    logradouro = models.CharField("Logradouro", max_length=200)
-    numero = models.CharField("Número", max_length=20)
+    logradouro = models.CharField("Logradouro", max_length=200, blank=True, null=True)
+    numero = models.CharField("Número", max_length=20, blank=True, null=True)
     complemento = models.CharField("Complemento", max_length=100, blank=True, null=True)
-    bairro = models.CharField("Bairro", max_length=100)
-    cidade = models.CharField("Cidade", max_length=100)
-    estado = models.CharField("UF", max_length=2, default="SC")
+    bairro = models.CharField("Bairro", max_length=100, blank=True, null=True)
+    cidade = models.CharField("Cidade", max_length=100, blank=True, null=True)
+    estado = models.CharField("UF", max_length=2, default="SC", blank=True, null=True)
 
     # Contato local (caso seja diferente da matriz)
     pessoa_contato = models.CharField("Responsável Local", max_length=100, blank=True, null=True)
@@ -61,7 +72,8 @@ class Filial(models.Model):
         verbose_name_plural = "Endereços Filiais"
 
     def __str__(self):
-        return f"{self.cliente.nome_fantasia} - {self.identificacao}"
+        nome_cli = self.cliente.nome_fantasia or self.cliente.razao_social
+        return f"{nome_cli} - {self.identificacao}"
 
 
 class DadosEnergia(models.Model):
@@ -69,9 +81,9 @@ class DadosEnergia(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name="dados_energia", null=True, blank=True)
     filial = models.ForeignKey(Filial, on_delete=models.CASCADE, related_name="dados_energia", null=True, blank=True)
     
-    unidade_consumidora = models.CharField("Unidade Consumidora (UC)", max_length=50)
-    concessionaria = models.CharField("Concessionária", max_length=50, default="CELESC")
-    tensao_fornecimento = models.CharField("Tensão de Atendimento", max_length=50, help_text="Ex: 380/220V, 13.8 kV, 23 kV")
+    unidade_consumidora = models.CharField("Unidade Consumidora (UC)", max_length=50, blank=True, null=True)
+    concessionaria = models.CharField("Concessionária", max_length=50, default="CELESC", blank=True, null=True)
+    tensao_fornecimento = models.CharField("Tensão de Atendimento", max_length=50, blank=True, null=True, help_text="Ex: 380/220V, 13.8 kV, 23 kV")
     demanda_contratada_kw = models.DecimalField("Demanda Contratada (kW)", max_digits=8, decimal_places=2, null=True, blank=True)
     potencia_trafo_kva = models.DecimalField("Potência do Trafo (kVA)", max_digits=8, decimal_places=2, null=True, blank=True)
     tipo_subestacao = models.CharField("Tipo de Subestação", max_length=100, blank=True, null=True, help_text="Ex: Aérea, Abrigada em Alvenaria, Blindada")
@@ -83,4 +95,4 @@ class DadosEnergia(models.Model):
 
     def __str__(self):
         alvo = self.filial.identificacao if self.filial else "Matriz"
-        return f"UC: {self.unidade_consumidora} ({alvo})"
+        return f"UC: {self.unidade_consumidora or '-'} ({alvo})"

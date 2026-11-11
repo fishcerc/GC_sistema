@@ -8,13 +8,20 @@
         <div>
             <h3 class="fw-bold mb-0 text-dark">
                 <i class="bi bi-buildings text-primary me-2"></i>
-                {% if cliente %}Editar Cliente: {{ cliente.nome_fantasia }}{% else %}Registo de Cliente (Matriz){% endif %}
+                {% if cliente %}Editar Cliente (PJ): {{ cliente.nome_fantasia|default:cliente.razao_social }}{% else %}Registro de Cliente (Pessoa Jurídica - CNPJ){% endif %}
             </h3>
-            <p class="text-muted mb-0">Insira as informações da matriz, unidades filiais e parâmetros elétricos.</p>
+            <p class="text-muted mb-0">Apenas o campo Razão Social é obrigatório. Os demais dados da matriz, filiais e parâmetros elétricos são opcionais.</p>
         </div>
-        <a href="{% url 'cliente_lista' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Voltar à Lista
-        </a>
+        <div class="d-flex gap-2">
+            {% if not cliente %}
+            <a href="{% url 'cliente_novo' %}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left-right me-1"></i> Trocar Tipo (PF/PJ)
+            </a>
+            {% endif %}
+            <a href="{% url 'cliente_lista' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Voltar à Lista
+            </a>
+        </div>
     </div>
 
     <form method="post" id="clienteForm">
@@ -28,7 +35,7 @@
             
             <div class="row g-3 mb-3">
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold">Razão Social</label>
+                    <label class="form-label fw-semibold">Razão Social <span class="text-danger">*</span></label>
                     {{ form.razao_social }}
                 </div>
                 <div class="col-md-6">

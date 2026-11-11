@@ -21,7 +21,7 @@
         </a>
     </div>
 
-    <form method="post" id="formProjeto">
+    <form method="post" id="formProjeto" enctype="multipart/form-data">
         {% csrf_token %}
 
         <!-- BLOCO 1: DADOS DO PROJETO E CLIENTE -->
@@ -60,13 +60,19 @@
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold">Cliente (Matriz) *</label>
-                    {{ form.cliente }}
+                    <label class="form-label fw-semibold">Cliente (Matriz / Pessoa Física) *</label>
+                    <div class="input-group">
+                        {{ form.cliente }}
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalBuscaCliente" title="Buscar cliente pelo nome">
+                            <i class="bi bi-search me-1"></i> Buscar
+                        </button>
+                    </div>
+                    <div class="form-text">Clique na lupa para pesquisar rapidamente pelo nome do cliente.</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Filial / Local do Atendimento</label>
                     {{ form.filial }}
-                    <div class="form-text">Selecione apenas se o atendimento for em uma filial.</div>
+                    <div class="form-text">Padrão: Atendimento na Matriz. Altere caso seja em uma filial.</div>
                 </div>
             </div>
         </div>
@@ -163,6 +169,87 @@
             </div>
         </div>
 
+        <!-- BLOCO 4: DIÁRIO DO PROJETO -->
+        <div class="card card-custom p-4 mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-2 mb-3 gap-2">
+                <div>
+                    <h5 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-journal-text me-1"></i> Diário do Projeto
+                    </h5>
+                    <small class="text-muted">Registre observações, ocorrências de campo e histórico do projeto. Cada anotação recebe automaticamente a data e hora de criação.</small>
+                </div>
+                <span class="badge bg-light text-dark border px-3 py-2">
+                    <i class="bi bi-calendar-check text-primary me-1"></i>
+                    {% if projeto %}
+                        Criado em: <strong>{{ projeto.criado_em|date:"d/m/Y \à\s H:i" }}</strong>
+                    {% else %}
+                        Data de Criação: <strong id="badge-timestamp-criacao">Hoje</strong>
+                    {% endif %}
+                </span>
+            </div>
+
+            <!-- Campo para nova anotação e anexo no Diário -->
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-md-5">
+                    <label class="form-label fw-semibold small text-secondary mb-1">Nova Anotação no Diário</label>
+                    <textarea name="diario_texto_direto" id="input-diario-texto" class="form-control" rows="2" placeholder="Digite uma atualização, observação técnica ou ocorrência do projeto..."></textarea>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold small text-secondary mb-1">
+                        <i class="bi bi-paperclip me-1"></i>Anexar Arquivo(s) <span class="text-muted fw-normal">(Todos os tipos, máx. 50MB)</span>
+                    </label>
+                    <div id="container-input-arquivo-diario">
+                        <input type="file" name="diario_arquivos_diretos" id="input-diario-arquivo" class="form-control" multiple>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold" id="btn-add-diario">
+                        <i class="bi bi-plus-circle me-1"></i> Inserir no Diário
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de Registros do Diário -->
+            <div id="lista-diario" class="d-flex flex-column gap-2">
+                {% for d in diarios %}
+                <div class="border rounded p-3 bg-light d-flex justify-content-between align-items-start item-diario">
+                    <input type="hidden" name="diario_manter_id[]" value="{{ d.id }}">
+                    <div>
+                        <div class="mb-1">
+                            <span class="badge bg-primary me-2">
+                                <i class="bi bi-clock me-1"></i> {{ d.criado_em|date:"d/m/Y H:i" }}
+                            </span>
+                            {% if d.autor %}
+                                <small class="text-muted fw-semibold">
+                                    <i class="bi bi-person me-1"></i>{{ d.autor.first_name|default:d.autor.username }}
+                                </small>
+                            {% endif %}
+                        </div>
+                        {% if d.texto %}
+                            <div class="text-dark mb-1" style="white-space: pre-line;">{{ d.texto }}</div>
+                        {% endif %}
+                        {% if d.arquivo %}
+                            <div class="mt-1">
+                                <a href="{{ d.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-dark">
+                                    <i class="bi bi-paperclip me-1"></i> {{ d.nome_arquivo }}
+                                    <i class="bi bi-download ms-1 small"></i>
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger ms-3 btn-remover-diario" title="Remover registro do diário">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                {% empty %}
+                <div id="aviso-sem-diario" class="text-center text-muted py-3 border rounded bg-light small">
+                    <i class="bi bi-journal-plus d-block fs-5 mb-1 text-secondary"></i>
+                    Nenhum registro no diário ainda. Ao criar o projeto ou inserir uma anotação/arquivo acima, o timestamp do dia será gravado automaticamente.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
         <!-- Botão Salvar -->
         <div class="d-flex justify-content-end mb-4">
             <button type="submit" class="btn btn-success btn-lg px-5 shadow">
@@ -170,6 +257,53 @@
             </button>
         </div>
     </form>
+</div>
+
+<!-- MODAL DE BUSCA DE CLIENTE POR NOME (LUPA) -->
+<div class="modal fade" id="modalBuscaCliente" tabindex="-1" aria-labelledby="modalBuscaClienteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold text-primary" id="modalBuscaClienteLabel">
+                    <i class="bi bi-search me-2"></i> Buscar Cliente pelo Nome
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-white"><i class="bi bi-search text-primary"></i></span>
+                    <input type="text" id="input-busca-cliente-modal" class="form-control form-control-lg" placeholder="Digite o nome ou razão social do cliente..." autocomplete="off">
+                </div>
+
+                <div class="list-group" id="lista-clientes-modal">
+                    {% for cli in clientes_busca %}
+                    <button type="button"
+                            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center item-cliente-busca"
+                            data-id="{{ cli.id }}"
+                            data-nome="{{ cli.razao_social|lower }} {{ cli.nome_fantasia|default:''|lower }}">
+                        <div>
+                            <div class="fw-bold text-dark">{{ cli.nome_fantasia|default:cli.razao_social }}</div>
+                            {% if cli.nome_fantasia and cli.nome_fantasia != cli.razao_social %}
+                                <small class="text-muted d-block">{{ cli.razao_social }}</small>
+                            {% endif %}
+                            {% if cli.cidade %}
+                                <small class="text-secondary"><i class="bi bi-geo-alt me-1"></i>{{ cli.cidade }}{% if cli.estado %}/{{ cli.estado }}{% endif %}</small>
+                            {% endif %}
+                        </div>
+                        <span class="btn btn-sm btn-outline-primary">Selecionar</span>
+                    </button>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        Nenhum cliente cadastrado no sistema.
+                    </div>
+                    {% endfor %}
+                </div>
+                <div id="aviso-nenhum-cliente-busca" class="text-center text-muted py-4 d-none">
+                    Nenhum cliente encontrado com esse nome.
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Modelo invisível para adicionar tarefas extras pelo JavaScript -->
@@ -232,30 +366,92 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 1. Atualizar filiais conforme cliente selecionado
-    if (selectCliente && selectFilial) {
-        selectCliente.addEventListener('change', function() {
-            const clienteId = this.value;
-            selectFilial.innerHTML = '<option value="">A carregar filiais...</option>';
+    function carregarFiliaisCliente(clienteId, manterFilialAtual = false) {
+        if (!selectFilial) return;
+        const filialAtual = manterFilialAtual ? selectFilial.value : '';
 
-            if (!clienteId) {
-                selectFilial.innerHTML = '<option value="">--------- (Atendimento na Matriz)</option>';
-                return;
-            }
+        if (!clienteId) {
+            selectFilial.innerHTML = '<option value="">Atendimento na Matriz (Sede Principal)</option>';
+            return;
+        }
 
-            fetch(`/projetos/api/filiais/${clienteId}/`)
-                .then(r => r.json())
-                .then(dados => {
-                    selectFilial.innerHTML = '<option value="">--------- (Atendimento na Matriz)</option>';
-                    dados.forEach(f => {
-                        const opt = document.createElement('option');
-                        opt.value = f.id;
-                        opt.textContent = `${f.identificacao} (${f.cidade})`;
-                        selectFilial.appendChild(opt);
-                    });
-                })
-                .catch(() => {
-                    selectFilial.innerHTML = '<option value="">Erro ao carregar filiais</option>';
+        selectFilial.innerHTML = '<option value="">Carregando filiais...</option>';
+        fetch(`/projetos/api/filiais/${clienteId}/`)
+            .then(r => r.json())
+            .then(dados => {
+                selectFilial.innerHTML = '<option value="">Atendimento na Matriz (Sede Principal)</option>';
+                dados.forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f.id;
+                    opt.textContent = f.cidade ? `${f.identificacao} (${f.cidade})` : f.identificacao;
+                    if (filialAtual && String(f.id) === String(filialAtual)) {
+                        opt.selected = true;
+                    }
+                    selectFilial.appendChild(opt);
                 });
+            })
+            .catch(() => {
+                selectFilial.innerHTML = '<option value="">Atendimento na Matriz (Sede Principal)</option>';
+            });
+    }
+
+    if (selectCliente && selectFilial) {
+        // Se existir cliente e ainda estiver em branco, seleciona automaticamente o primeiro cliente válido
+        if (!selectCliente.value && selectCliente.options.length > 0) {
+            for (let i = 0; i < selectCliente.options.length; i++) {
+                if (selectCliente.options[i].value) {
+                    selectCliente.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+
+        selectCliente.addEventListener('change', function() {
+            carregarFiliaisCliente(this.value, false);
+        });
+    }
+
+    // 1.1 Busca de Cliente por Nome no Modal da Lupa
+    const modalBuscaEl = document.getElementById('modalBuscaCliente');
+    const inputBuscaCliente = document.getElementById('input-busca-cliente-modal');
+    const itensClienteBusca = document.querySelectorAll('.item-cliente-busca');
+    const avisoNenhumCliente = document.getElementById('aviso-nenhum-cliente-busca');
+
+    if (modalBuscaEl && inputBuscaCliente) {
+        modalBuscaEl.addEventListener('shown.bs.modal', function() {
+            inputBuscaCliente.value = '';
+            itensClienteBusca.forEach(item => item.classList.remove('d-none'));
+            if (avisoNenhumCliente) avisoNenhumCliente.classList.add('d-none');
+            inputBuscaCliente.focus();
+        });
+
+        inputBuscaCliente.addEventListener('input', function() {
+            const termo = this.value.trim().toLowerCase();
+            let encontrados = 0;
+            itensClienteBusca.forEach(item => {
+                const nome = item.getAttribute('data-nome') || '';
+                if (!termo || nome.includes(termo)) {
+                    item.classList.remove('d-none');
+                    encontrados++;
+                } else {
+                    item.classList.add('d-none');
+                }
+            });
+            if (avisoNenhumCliente) {
+                avisoNenhumCliente.classList.toggle('d-none', encontrados > 0);
+            }
+        });
+
+        itensClienteBusca.forEach(item => {
+            item.addEventListener('click', function() {
+                const clienteId = this.getAttribute('data-id');
+                if (selectCliente && clienteId) {
+                    selectCliente.value = clienteId;
+                    selectCliente.dispatchEvent(new Event('change'));
+                }
+                const modalInstance = bootstrap.Modal.getInstance(modalBuscaEl);
+                if (modalInstance) modalInstance.hide();
+            });
         });
     }
 
@@ -454,6 +650,140 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         atualizarDataAlerta(false);
+    }
+
+    // 6. Diário do Projeto (Timestamp automático do dia criado + Anexos até 50MB)
+    const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+    let contadorDiarioNovos = 0;
+
+    function formatarAgora() {
+        const agora = new Date();
+        const dia = String(agora.getDate()).padStart(2, '0');
+        const mes = String(agora.getMonth() + 1).padStart(2, '0');
+        const ano = agora.getFullYear();
+        const hora = String(agora.getHours()).padStart(2, '0');
+        const min = String(agora.getMinutes()).padStart(2, '0');
+        return `${dia}/${mes}/${ano} ${hora}:${min}`;
+    }
+
+    function validarArquivos50MB(inputFile) {
+        if (!inputFile || !inputFile.files) return true;
+        for (let i = 0; i < inputFile.files.length; i++) {
+            if (inputFile.files[i].size > MAX_FILE_SIZE_BYTES) {
+                alert(`O arquivo "${inputFile.files[i].name}" excede o tamanho máximo permitido de 50 MB.`);
+                inputFile.value = '';
+                return false;
+            }
+        }
+        return true;
+    }
+
+    const badgeTimestamp = document.getElementById('badge-timestamp-criacao');
+    if (badgeTimestamp) {
+        badgeTimestamp.textContent = formatarAgora();
+    }
+
+    const btnAddDiario = document.getElementById('btn-add-diario');
+    const inputDiarioTexto = document.getElementById('input-diario-texto');
+    const containerArquivoDiario = document.getElementById('container-input-arquivo-diario');
+    const listaDiario = document.getElementById('lista-diario');
+
+    if (containerArquivoDiario) {
+        containerArquivoDiario.addEventListener('change', function(e) {
+            if (e.target && e.target.type === 'file') {
+                validarArquivos50MB(e.target);
+            }
+        });
+    }
+
+    if (btnAddDiario && inputDiarioTexto && listaDiario && containerArquivoDiario) {
+        btnAddDiario.addEventListener('click', function() {
+            const inputArquivoAtual = containerArquivoDiario.querySelector('input[type="file"]');
+            if (!validarArquivos50MB(inputArquivoAtual)) return;
+
+            const texto = inputDiarioTexto.value.trim();
+            const temArquivos = inputArquivoAtual && inputArquivoAtual.files && inputArquivoAtual.files.length > 0;
+
+            if (!texto && !temArquivos) {
+                inputDiarioTexto.focus();
+                return;
+            }
+
+            const aviso = document.getElementById('aviso-sem-diario');
+            if (aviso) aviso.remove();
+
+            const idx = contadorDiarioNovos++;
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'border rounded p-3 bg-light d-flex justify-content-between align-items-start item-diario border-primary';
+
+            const hiddenIdx = document.createElement('input');
+            hiddenIdx.type = 'hidden';
+            hiddenIdx.name = 'diario_novo_idx[]';
+            hiddenIdx.value = String(idx);
+
+            const hiddenTexto = document.createElement('input');
+            hiddenTexto.type = 'hidden';
+            hiddenTexto.name = `diario_novo_texto_${idx}`;
+            hiddenTexto.value = texto;
+
+            const conteudoDiv = document.createElement('div');
+            const cabecalhoDiv = document.createElement('div');
+            cabecalhoDiv.className = 'mb-1';
+            cabecalhoDiv.innerHTML = `<span class="badge bg-primary me-2"><i class="bi bi-clock me-1"></i> ${formatarAgora()}</span><small class="text-success fw-semibold">Novo registro (será salvo ao gravar)</small>`;
+            conteudoDiv.appendChild(cabecalhoDiv);
+
+            if (texto) {
+                const textoDiv = document.createElement('div');
+                textoDiv.className = 'text-dark mb-1';
+                textoDiv.style.whiteSpace = 'pre-line';
+                textoDiv.textContent = texto;
+                conteudoDiv.appendChild(textoDiv);
+            }
+
+            if (temArquivos) {
+                const nomesArquivos = Array.from(inputArquivoAtual.files).map(f => f.name).join(', ');
+                const anexoDiv = document.createElement('div');
+                anexoDiv.className = 'mt-1 small fw-semibold text-primary';
+                anexoDiv.innerHTML = `<i class="bi bi-paperclip me-1"></i> Anexo(s): ${nomesArquivos}`;
+                conteudoDiv.appendChild(anexoDiv);
+
+                // Move o input de arquivo atual para dentro do item do diário (oculto) e cria um novo input limpo
+                inputArquivoAtual.name = `diario_novo_arquivo_${idx}`;
+                inputArquivoAtual.removeAttribute('id');
+                inputArquivoAtual.classList.add('d-none');
+                itemDiv.appendChild(inputArquivoAtual);
+
+                const novoInputFile = document.createElement('input');
+                novoInputFile.type = 'file';
+                novoInputFile.name = 'diario_arquivos_diretos';
+                novoInputFile.id = 'input-diario-arquivo';
+                novoInputFile.className = 'form-control';
+                novoInputFile.multiple = true;
+                containerArquivoDiario.appendChild(novoInputFile);
+            }
+
+            const btnRemover = document.createElement('button');
+            btnRemover.type = 'button';
+            btnRemover.className = 'btn btn-sm btn-outline-danger ms-3 btn-remover-diario';
+            btnRemover.title = 'Remover registro do diário';
+            btnRemover.innerHTML = '<i class="bi bi-trash"></i>';
+
+            itemDiv.appendChild(hiddenIdx);
+            itemDiv.appendChild(hiddenTexto);
+            itemDiv.appendChild(conteudoDiv);
+            itemDiv.appendChild(btnRemover);
+
+            listaDiario.prepend(itemDiv);
+            inputDiarioTexto.value = '';
+            inputDiarioTexto.focus();
+        });
+
+        listaDiario.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-remover-diario');
+            if (btn) {
+                btn.closest('.item-diario').remove();
+            }
+        });
     }
 });
 </script>

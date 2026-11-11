@@ -7,9 +7,9 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.db import transaction
 from django.db.models import Q, Count
-from .models import Projeto, Tecnico, Tarefa, TarefaPadrao, TipoProjeto, StatusProjeto
+from .models import Projeto, Tecnico, Tarefa, TarefaPadrao, TipoProjeto, StatusProjeto, DiarioProjeto
 from .forms import ProjetoForm, TecnicoForm, TipoProjetoForm, TarefaPadraoForm, UsuarioSistemaForm, StatusProjetoForm
-from cadastros.models import Filial
+from cadastros.models import Cliente, Filial
 
 
 # ==========================================
@@ -52,6 +52,7 @@ def projeto_lista(request):
 def projeto_criar_ou_editar(request, pk=None):
     projeto = get_object_or_404(Projeto, pk=pk) if pk else None
     tecnicos = Tecnico.objects.filter(ativo=True).order_by('nome')
+    clientes_busca = Cliente.objects.all().order_by('razao_social')
     tipos_lembrete_map = {t.id: t.requer_lembrete for t in TipoProjeto.objects.all()}
 
     status_concluido_obj = StatusProjeto.objects.filter(eh_concluido=True, ativo=True).first()
@@ -64,7 +65,27 @@ def projeto_criar_ou_editar(request, pk=None):
         datas_agendadas = request.POST.getlist('tarefa_data[]')
         concluidas = request.POST.getlist('tarefa_concluida[]')
 
-        if form.is_valid():
+        diario_manter_ids = request.POST.getlist('diario_manter_id[]')
+        diario_novos_indices = request.POST.getlist('diario_novo_idx[]')
+        diario_texto_direto = request.POST.get('diario_texto_direto', '').strip()
+        diario_arquivos_diretos = request.FILES.getlist('diario_arquivos_diretos')
+
+        MAX_BYTES = 50 * 1024 * 1024  # 50 MB
+        arquivo_excedeu = None
+        for arq in diario_arquivos_diretos:
+            if arq.size > MAX_BYTES:
+                arquivo_excedeu = arq.name
+                break
+        if not arquivo_excedeu:
+            for idx in diario_novos_indices:
+                for arq in request.FILES.getlist(f'diario_novo_arquivo_{idx}'):
+                    if arq.size > MAX_BYTES:
+                        arquivo_excedeu = arq.name
+                        break
+
+        if arquivo_excedeu:
+            messages.error(request, f'O arquivo "{arquivo_excedeu}" excede o tamanho máximo permitido de 50 MB.')
+        elif form.is_valid():
             with transaction.atomic():
                 proj_salvo = form.save()
 
@@ -89,6 +110,60 @@ def projeto_criar_ou_editar(request, pk=None):
                         concluida=concluida_val
                     )
 
+                # Gerenciamento do Diário do Projeto (textos e anexos até 50MB)
+                if pk:
+                    ids_validos = [int(x) for x in diario_manter_ids if x.isdigit()]
+                    proj_salvo.diarios.exclude(id__in=ids_validos).delete()
+
+                autor_atual = request.user if request.user.is_authenticated else None
+                criou_diario = False
+
+                # 1. Registros inseridos na lista pelo botão "+ Inserir no Diário"
+                for idx in diario_novos_indices:
+                    txt = request.POST.get(f'diario_novo_texto_{idx}', '').strip()
+                    arqs = request.FILES.getlist(f'diario_novo_arquivo_{idx}')
+                    if arqs:
+                        for j, arq in enumerate(arqs):
+                            DiarioProjeto.objects.create(
+                                projeto=proj_salvo,
+                                autor=autor_atual,
+                                texto=txt if j == 0 else '',
+                                arquivo=arq
+                            )
+                            criou_diario = True
+                    elif txt:
+                        DiarioProjeto.objects.create(
+                            projeto=proj_salvo,
+                            autor=autor_atual,
+                            texto=txt
+                        )
+                        criou_diario = True
+
+                # 2. Registro digitado/anexado diretamente no formulário ao clicar em Gravar
+                if diario_arquivos_diretos:
+                    for j, arq in enumerate(diario_arquivos_diretos):
+                        DiarioProjeto.objects.create(
+                            projeto=proj_salvo,
+                            autor=autor_atual,
+                            texto=diario_texto_direto if j == 0 else '',
+                            arquivo=arq
+                        )
+                        criou_diario = True
+                elif diario_texto_direto:
+                    DiarioProjeto.objects.create(
+                        projeto=proj_salvo,
+                        autor=autor_atual,
+                        texto=diario_texto_direto
+                    )
+                    criou_diario = True
+
+                if not pk and not criou_diario:
+                    DiarioProjeto.objects.create(
+                        projeto=proj_salvo,
+                        autor=autor_atual,
+                        texto="Projeto / Ordem de Serviço criada no sistema."
+                    )
+
             messages.success(request, f'Projeto OS {proj_salvo.numero_os} gravado com sucesso!')
             return redirect('projeto_lista')
         else:
@@ -97,6 +172,7 @@ def projeto_criar_ou_editar(request, pk=None):
         form = ProjetoForm(instance=projeto)
 
     tarefas_iniciais = []
+    diarios = []
     if projeto:
         tarefas_iniciais = [
             {
@@ -105,14 +181,17 @@ def projeto_criar_ou_editar(request, pk=None):
                 'data': t.data_agendada.strftime('%Y-%m-%d') if t.data_agendada else '',
                 'concluida': t.concluida,
             }
-            for t in projeto.tarefas.all()
+            for t in projeto.tarefas.all().order_by('id')
         ]
+        diarios = projeto.diarios.select_related('autor').all()
 
     return render(request, 'projetos/projeto_form.html', {
         'form': form,
         'projeto': projeto,
         'tecnicos': tecnicos,
+        'clientes_busca': clientes_busca,
         'tarefas_iniciais': tarefas_iniciais,
+        'diarios': diarios,
         'tipos_lembrete_json': json.dumps(tipos_lembrete_map),
         'status_concluido_nome': status_concluido_nome,
     })
@@ -199,9 +278,14 @@ def agenda_tecnica(request):
     tecnico_id = request.GET.get('tecnico', '').strip()
     periodo = request.GET.get('periodo', 'todos').strip()
 
+    nomes_concluidos = list(
+        StatusProjeto.objects.filter(eh_concluido=True).values_list('nome', flat=True)
+    )
+    status_finais = set(['concluido', 'cancelado', 'Concluído', 'Cancelado'] + nomes_concluidos)
+
     tarefas = Tarefa.objects.select_related(
         'projeto', 'projeto__cliente', 'projeto__filial', 'projeto__tipo_projeto', 'tecnico_responsavel'
-    ).exclude(projeto__status__in=['concluido', 'cancelado'])
+    ).filter(concluida=False).exclude(projeto__status__in=status_finais)
 
     if tecnico_id:
         if tecnico_id == 'sem_tecnico':
