@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Usuário do Sistema{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 600px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3><i class="bi bi-shield-lock text-primary"></i> Editar Usuário: {{ usuario_obj.username }}</h3>
+        <a href="{% url 'gerenciamento_usuarios' %}" class="btn btn-outline-secondary">Voltar</a>
+    </div>
+
+    <div class="card card-custom p-4">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Login (Usuário)</label>
+                {{ form.username }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Nome de Exibição</label>
+                {{ form.first_name }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">E-mail</label>
+                {{ form.email }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Nova Senha (Opcional)</label>
+                {{ form.senha }}
+                <div class="form-text">Preencha apenas se desejar alterar a senha atual deste usuário.</div>
+            </div>
+            <div class="form-check form-switch mb-4">
+                {{ form.is_active }}
+                <label class="form-check-label fw-semibold" for="{{ form.is_active.id_for_label }}">Usuário Ativo</label>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'gerenciamento_usuarios' %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-success">Salvar Alterações</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

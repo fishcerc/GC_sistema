@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Central de Gerenciamento{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-5">
+    <div class="mb-4">
+        <h3 class="fw-bold mb-1 text-dark">
+            <i class="bi bi-gear-wide-connected text-primary me-2"></i> Central de Gerenciamento
+        </h3>
+        <p class="text-muted mb-0">Parametrização operacional do sistema. Selecione um módulo abaixo para configurar.</p>
+    </div>
+
+    <!-- GRADE MODULAR: 3 CARDS POR LINHA -->
+    <div class="row g-4">
+        
+        <!-- CARD 1: TÉCNICOS -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card card-custom h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle">
+                            <i class="bi bi-people-fill fs-3"></i>
+                        </div>
+                        <span class="badge bg-primary fs-6">{{ total_tecnicos }} cadastrado(s)</span>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2">Equipe Técnica</h5>
+                    <p class="text-muted small">Cadastro e controle dos profissionais responsáveis pela execução em campo e emissão de laudos.</p>
+                </div>
+                <div class="pt-3 border-top">
+                    <a href="{% url 'gerenciamento_tecnicos' %}" class="btn btn-outline-primary w-100 fw-semibold">
+                        <i class="bi bi-arrow-right-circle me-1"></i> Gerenciar Técnicos
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 2: TIPOS DE PROJETOS -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card card-custom h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="bg-warning bg-opacity-10 text-warning-emphasis p-3 rounded-circle">
+                            <i class="bi bi-tags-fill fs-3 text-warning"></i>
+                        </div>
+                        <span class="badge bg-warning text-dark fs-6">{{ total_tipos }} cadastrado(s)</span>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2">Tipos de Projetos</h5>
+                    <p class="text-muted small">Categorias de serviços prestados (Laudos, Preventivos, Elétrica) e regra de alerta de renovação.</p>
+                </div>
+                <div class="pt-3 border-top">
+                    <a href="{% url 'gerenciamento_tipos' %}" class="btn btn-outline-warning text-dark w-100 fw-semibold">
+                        <i class="bi bi-arrow-right-circle me-1"></i> Gerenciar Tipos
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 3: TAREFAS PADRÃO -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card card-custom h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle">
+                            <i class="bi bi-list-check fs-3"></i>
+                        </div>
+                        <span class="badge bg-success fs-6">{{ total_tarefas }} configurada(s)</span>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2">Tarefas Padrão</h5>
+                    <p class="text-muted small">Checklists automáticos de etapas atribuídos dinamicamente a cada tipo de projeto no formulário de OS.</p>
+                </div>
+                <div class="pt-3 border-top">
+                    <a href="{% url 'gerenciamento_tarefas_padrao' %}" class="btn btn-outline-success w-100 fw-semibold">
+                        <i class="bi bi-arrow-right-circle me-1"></i> Gerenciar Tarefas
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 4: USUÁRIOS DO SISTEMA -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card card-custom h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="bg-dark bg-opacity-10 text-dark p-3 rounded-circle">
+                            <i class="bi bi-shield-lock-fill fs-3"></i>
+                        </div>
+                        <span class="badge bg-dark fs-6">{{ total_usuarios }} usuário(s)</span>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2">Usuários do Sistema</h5>
+                    <p class="text-muted small">Criação de logins e senhas de acesso ao sistema para vincular aos profissionais técnicos.</p>
+                </div>
+                <div class="pt-3 border-top">
+                    <a href="{% url 'gerenciamento_usuarios' %}" class="btn btn-outline-dark w-100 fw-semibold">
+                        <i class="bi bi-arrow-right-circle me-1"></i> Gerenciar Usuários
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 5: ESTADOS DO PROJETO (STATUS) -->
+        <div class="col-lg-4 col-md-6">
+            <div class="card card-custom h-100 p-4 border-0 shadow-sm d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="bg-info bg-opacity-10 text-info p-3 rounded-circle">
+                            <i class="bi bi-flag-fill fs-3"></i>
+                        </div>
+                        <span class="badge bg-info text-dark fs-6">{{ total_status }} estado(s)</span>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2">Estados do Projeto</h5>
+                    <p class="text-muted small">Configuração dos status operacionais das OS (Planejamento, Em Execução, Concluído, etc.).</p>
+                </div>
+                <div class="pt-3 border-top">
+                    <a href="{% url 'gerenciamento_status' %}" class="btn btn-outline-info text-dark w-100 fw-semibold">
+                        <i class="bi bi-arrow-right-circle me-1"></i> Gerenciar Estados
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

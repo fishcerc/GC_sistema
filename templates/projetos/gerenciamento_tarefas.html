@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Gerenciar Tarefas Padrão{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-5">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-list-check text-success me-2"></i> Tarefas Padrão por Tipo de Projeto
+            </h3>
+            <p class="text-muted mb-0">Selecione o tipo de projeto abaixo para gerenciar e adicionar suas tarefas exclusivas.</p>
+        </div>
+        <a href="{% url 'gerenciamento_hub' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar ao Gerenciamento
+        </a>
+    </div>
+
+    <!-- BLOCO 1: DROPDOWN DE SELEÇÃO DO TIPO DE PROJETO -->
+    <div class="card card-custom p-4 mb-4">
+        <form method="get" id="form-selecionar-tipo" class="row g-3 align-items-end">
+            <div class="col-md-8">
+                <label class="form-label fw-bold text-primary fs-6">
+                    <i class="bi bi-tags-fill me-1"></i> 1. Selecione o Tipo de Projeto
+                </label>
+                <select name="tipo" class="form-select form-select-lg" onchange="this.form.submit()">
+                    <option value="">-- Escolha um Tipo de Projeto para carregar as tarefas --</option>
+                    {% for tp in tipos %}
+                    <option value="{{ tp.id }}" {% if tipo_selecionado and tipo_selecionado.id == tp.id %}selected{% endif %}>
+                        {{ tp.nome }}{% if not tp.ativo %} (Inativo){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'gerenciamento_tipos' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-plus-circle me-1"></i> Gerenciar Tipos de Projetos
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- BLOCO 2: CRUD DE TAREFAS DO TIPO SELECIONADO (NA MESMA PÁGINA) -->
+    {% if tipo_selecionado %}
+    <form method="post" id="form-tarefas-padrao">
+        {% csrf_token %}
+        <input type="hidden" name="tipo_projeto_id" value="{{ tipo_selecionado.id }}">
+
+        <div class="card card-custom p-4">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                <div>
+                    <h5 class="fw-bold text-dark mb-0">
+                        2. Tarefas de: <span class="text-success">{{ tipo_selecionado.nome }}</span>
+                    </h5>
+                    <small class="text-muted">Edite os nomes, altere a ordem, exclua ou clique no botão <strong>+</strong> para adicionar mais tarefas a este tipo.</small>
+                </div>
+                <button type="button" class="btn btn-primary fw-semibold shadow-sm" id="btn-add-tarefa">
+                    <i class="bi bi-plus-lg me-1"></i> Adicionar Tarefa
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0" id="tabela-tarefas-padrao">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 12%;">Ordem</th>
+                            <th style="width: 63%;">Nome da Tarefa</th>
+                            <th style="width: 15%;">Status</th>
+                            <th style="width: 10%;" class="text-center">Excluir</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tarefas-padrao">
+                        {% for tar in tarefas %}
+                        <tr class="linha-tarefa-padrao">
+                            <td>
+                                <input type="hidden" name="tarefa_id[]" value="{{ tar.id }}">
+                                <input type="number" name="tarefa_ordem[]" class="form-control form-control-sm text-center fw-bold" value="{{ tar.ordem }}" min="1" required>
+                            </td>
+                            <td>
+                                <input type="text" name="tarefa_nome[]" class="form-control form-control-sm" value="{{ tar.nome }}" placeholder="Digite o nome da tarefa..." required>
+                            </td>
+                            <td>
+                                <select name="tarefa_ativo[]" class="form-select form-select-sm">
+                                    <option value="1" {% if tar.ativo %}selected{% endif %}>Ativa</option>
+                                    <option value="0" {% if not tar.ativo %}selected{% endif %}>Inativa</option>
+                                </select>
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-remover-tarefa" title="Excluir esta tarefa">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr id="aviso-sem-tarefas">
+                            <td colspan="4" class="text-center text-muted py-4">
+                                Nenhuma tarefa cadastrada ainda para <strong>{{ tipo_selecionado.nome }}</strong>.
+                                Clique no botão <strong>"+ Adicionar Tarefa"</strong> acima para começar.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                <button type="button" class="btn btn-outline-primary btn-sm" id="btn-add-tarefa-rodape">
+                    <i class="bi bi-plus-circle me-1"></i> + Mais uma tarefa
+                </button>
+                <button type="submit" class="btn btn-success btn-lg px-5 shadow-sm">
+                    <i class="bi bi-check-circle me-1"></i> Salvar Tarefas de {{ tipo_selecionado.nome }}
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Template invisível para clonar novas linhas com o botão + -->
+    <template id="template-nova-tarefa">
+        <tr class="linha-tarefa-padrao">
+            <td>
+                <input type="hidden" name="tarefa_id[]" value="">
+                <input type="number" name="tarefa_ordem[]" class="form-control form-control-sm text-center fw-bold input-ordem" value="1" min="1" required>
+            </td>
+            <td>
+                <input type="text" name="tarefa_nome[]" class="form-control form-control-sm input-nome" placeholder="Ex: Levantamento de Campo, Diagrama Unifilar, Emissão de ART..." required>
+            </td>
+            <td>
+                <select name="tarefa_ativo[]" class="form-select form-select-sm">
+                    <option value="1" selected>Ativa</option>
+                    <option value="0">Inativa</option>
+                </select>
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger btn-remover-tarefa" title="Excluir esta tarefa">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    </template>
+
+    {% else %}
+    <!-- Aviso enquanto nenhum Tipo de Projeto foi selecionado no dropdown -->
+    <div class="card card-custom p-5 text-center text-muted">
+        <i class="bi bi-arrow-up-circle text-primary fs-1 mb-2"></i>
+        <h5 class="fw-bold text-dark">Selecione um Tipo de Projeto acima</h5>
+        <p class="mb-0">Escolha uma categoria no menu suspenso para visualizar, adicionar, editar ou remover suas tarefas padrão.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const corpo = document.getElementById('corpo-tarefas-padrao');
+    const template = document.getElementById('template-nova-tarefa');
+    const btnAddTopo = document.getElementById('btn-add-tarefa');
+    const btnAddRodape = document.getElementById('btn-add-tarefa-rodape');
+
+    function adicionarLinhaTarefa() {
+        if (!corpo || !template) return;
+
+        const aviso = document.getElementById('aviso-sem-tarefas');
+        if (aviso) aviso.remove();
+
+        // Calcula a próxima ordem automaticamente (1, 2, 3...)
+        const ordensExistentes = Array.from(corpo.querySelectorAll('input[name="tarefa_ordem[]"]'))
+            .map(input => parseInt(input.value, 10) || 0);
+        const proximaOrdem = ordensExistentes.length > 0 ? Math.max(...ordensExistentes) + 1 : 1;
+
+        const clone = template.content.cloneNode(true);
+        clone.querySelector('.input-ordem').value = proximaOrdem;
+
+        corpo.appendChild(clone);
+
+        // Coloca o foco direto no campo Nome da Tarefa recém-criado
+        const inputsNome = corpo.querySelectorAll('input[name="tarefa_nome[]"]');
+        if (inputsNome.length > 0) {
+            inputsNome[inputsNome.length - 1].focus();
+        }
+    }
+
+    if (btnAddTopo) btnAddTopo.addEventListener('click', adicionarLinhaTarefa);
+    if (btnAddRodape) btnAddRodape.addEventListener('click', adicionarLinhaTarefa);
+
+    if (corpo) {
+        corpo.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-remover-tarefa');
+            if (btn) {
+                btn.closest('tr').remove();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

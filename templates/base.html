@@ -51,7 +51,7 @@
         <hr class="border-secondary">
         <ul class="nav nav-pills flex-column mb-auto">
             <li class="nav-item">
-                <a href="/" class="nav-link">
+                <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                     <i class="bi bi-speedometer2 me-2"></i> Dashboard
                 </a>
             </li>
@@ -61,19 +61,40 @@
                 </a>
             </li>
             <li>
-                <a href="{% url 'projeto_lista' %}" class="nav-link {% if 'projeto' in request.resolver_match.url_name %}active{% endif %}">
+                <a href="{% url 'projeto_lista' %}" class="nav-link {% if request.resolver_match.url_name == 'projeto_lista' or request.resolver_match.url_name == 'projeto_novo' or request.resolver_match.url_name == 'projeto_editar' %}active{% endif %}">
                     <i class="bi bi-folder-check me-2"></i> Projetos
                 </a>
             </li>
             <li>
-                <a href="#" class="nav-link">
+                <a href="{% url 'laudos_lista' %}" class="nav-link {% if 'laudos' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-bell me-2"></i> Laudos Ativos
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'agenda_tecnica' %}" class="nav-link {% if 'agenda' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="bi bi-calendar-week me-2"></i> Agenda Técnica
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'gerenciamento_hub' %}" class="nav-link {% if 'gerenciamento' in request.resolver_match.url_name or 'tecnico_' in request.resolver_match.url_name or 'tipo_projeto_' in request.resolver_match.url_name or 'tarefa_padrao_' in request.resolver_match.url_name or 'usuario_' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-gear-fill me-2"></i> Gerenciamento
                 </a>
             </li>
         </ul>
         <hr class="border-secondary">
-        <div class="px-3 text-secondary small">
-            Sistema Operacional v1.0
+        <div class="px-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="small text-light text-truncate" title="{{ request.user.username }}">
+                    <i class="bi bi-person-circle text-warning me-1"></i>
+                    <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                </div>
+            </div>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-light w-100">
+                    <i class="bi bi-box-arrow-right me-1"></i> Sair
+                </button>
+            </form>
         </div>
     </aside>
 

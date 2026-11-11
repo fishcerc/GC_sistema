@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}Laudos Ativos e Vencimentos{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-5">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-bell-fill text-warning me-2"></i> Laudos Ativos e Controle de Renovação
+            </h3>
+            <p class="text-muted mb-0">Acompanhamento de validade e datas de renovação de laudos e inspeções periódicas.</p>
+        </div>
+        <a href="{% url 'projeto_novo' %}" class="btn btn-primary shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Novo Laudo / OS
+        </a>
+    </div>
+
+    <!-- Barra de Pesquisa por Data, Tipo de Projeto e Cliente -->
+    <div class="card card-custom p-3 mb-4">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small fw-bold text-secondary mb-1">Cliente ou Nº da OS</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="busca" class="form-control" placeholder="Buscar por Cliente, CNPJ ou OS..." value="{{ termo_busca }}">
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-secondary mb-1">Tipo de Projeto / Laudo</label>
+                <select name="tipo" class="form-select">
+                    <option value="">Todos os Tipos</option>
+                    {% for tp in tipos_laudo %}
+                    <option value="{{ tp.id }}" {% if tipo_filtro == tp.id|stringformat:"s" %}selected{% endif %}>
+                        {{ tp.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-secondary mb-1">Vencimento (De)</label>
+                <input type="date" name="data_inicio" class="form-control" value="{{ data_inicio }}">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-secondary mb-1">Vencimento (Até)</label>
+                <input type="date" name="data_fim" class="form-control" value="{{ data_fim }}">
+            </div>
+
+            <div class="col-md-1 d-flex gap-1">
+                <button type="submit" class="btn btn-dark w-100" title="Pesquisar">
+                    <i class="bi bi-funnel-fill"></i>
+                </button>
+                {% if termo_busca or tipo_filtro or data_inicio or data_fim %}
+                <a href="{% url 'laudos_lista' %}" class="btn btn-outline-secondary" title="Limpar Filtros">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabela de Laudos Ativos -->
+    <div class="card card-custom p-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nº OS</th>
+                        <th>Cliente / Unidade</th>
+                        <th>Tipo de Projeto</th>
+                        <th>Contato do Cliente</th>
+                        <th>Data Abertura</th>
+                        <th>Data de Renovação</th>
+                        <th>Situação / Prazo</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in laudos %}
+                    <tr style="cursor: pointer;" onclick="window.location='{% url 'projeto_editar' item.projeto.pk %}';">
+                        <td><span class="badge bg-dark fs-6">OS {{ item.projeto.numero_os }}</span></td>
+                        <td>
+                            <strong class="text-primary">{{ item.projeto.cliente.nome_fantasia }}</strong>
+                            {% if item.projeto.filial %}
+                                <div class="small text-muted"><i class="bi bi-geo-alt"></i> Filial: {{ item.projeto.filial.identificacao }} ({{ item.projeto.filial.cidade }})</div>
+                            {% else %}
+                                <div class="small text-muted"><i class="bi bi-building"></i> Matriz ({{ item.projeto.cliente.cidade }})</div>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-secondary">{{ item.projeto.tipo_projeto.nome }}</span></td>
+                        <td>
+                            <div class="small fw-semibold">{{ item.projeto.cliente.pessoa_contato }}</div>
+                            <div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ item.projeto.cliente.celular }}</div>
+                        </td>
+                        <td>{{ item.projeto.data_abertura|date:"d/m/Y" }}</td>
+                        <td class="fw-bold">
+                            {% if item.projeto.data_alerta_renovacao %}
+                                {{ item.projeto.data_alerta_renovacao|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="text-muted small">Não definida</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.dias_restantes is None %}
+                                <span class="badge bg-light text-muted border">Sem data</span>
+                            {% elif item.vencido %}
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Vencido ({{ item.dias_restantes }} dias)
+                                </span>
+                            {% elif item.urgente %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-clock-fill me-1"></i> Vence em {{ item.dias_restantes }} dia(s)
+                                </span>
+                            {% elif item.proximo %}
+                                <span class="badge bg-info text-dark">
+                                    Vence em {{ item.dias_restantes }} dias
+                                </span>
+                            {% else %}
+                                <span class="badge bg-success">
+                                    Ativo ({{ item.dias_restantes }} dias restantes)
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end" onclick="event.stopPropagation();">
+                            <a href="{% url 'projeto_editar' item.projeto.pk %}" class="btn btn-sm btn-outline-primary" title="Editar Laudo / OS">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">
+                            <i class="bi bi-bell-slash fs-2 d-block mb-2 text-secondary"></i>
+                            Nenhum laudo ativo encontrado para os filtros informados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

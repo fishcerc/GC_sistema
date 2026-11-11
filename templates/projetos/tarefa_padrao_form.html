@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Editar Tarefa Padrão{% endblock %}
+{% block content %}
+<div class="container-fluid" style="max-width: 600px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>Editar Tarefa Padrão</h3>
+        <a href="{% url 'gerenciamento_tarefas_padrao' %}" class="btn btn-outline-secondary">Voltar</a>
+    </div>
+    <div class="card card-custom p-4">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3"><label class="form-label fw-semibold">Tipo de Projeto</label>{{ form.tipo_projeto }}</div>
+            <div class="mb-3"><label class="form-label fw-semibold">Nome da Tarefa</label>{{ form.nome }}</div>
+            <div class="mb-3"><label class="form-label fw-semibold">Ordem</label>{{ form.ordem }}</div>
+            <div class="form-check form-switch mb-4">{{ form.ativo }}<label class="form-check-label fw-semibold" for="{{ form.ativo.id_for_label }}">Ativa</label></div>
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'gerenciamento_tarefas_padrao' %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-success">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

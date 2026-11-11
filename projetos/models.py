@@ -1,6 +1,38 @@
 from django.db import models
+from django.contrib.auth.models import User
 from cadastros.models import Cliente, Filial
 from datetime import date, timedelta
+
+
+class StatusProjeto(models.Model):
+    """Estados operacionais do projeto configuráveis no Gerenciamento"""
+    COR_CHOICES = [
+        ('info', 'Azul Claro (Planejamento)'),
+        ('primary', 'Azul Escuro (Em Execução)'),
+        ('warning', 'Amarelo (Alerta / Pendência)'),
+        ('danger', 'Vermelho (Bloqueado / Cancelado)'),
+        ('success', 'Verde (Concluído)'),
+        ('secondary', 'Cinza (Padrão)'),
+        ('dark', 'Preto'),
+    ]
+
+    nome = models.CharField("Nome do Estado / Status", max_length=60, unique=True)
+    cor = models.CharField("Cor da Etiqueta", max_length=20, choices=COR_CHOICES, default='primary')
+    ordem = models.PositiveIntegerField("Ordem de Exibição", default=1)
+    eh_concluido = models.BooleanField(
+        "Status de Conclusão?",
+        default=False,
+        help_text="Marque se este estado representa que o projeto foi concluído"
+    )
+    ativo = models.BooleanField("Ativo", default=True)
+
+    class Meta:
+        verbose_name = "Estado do Projeto"
+        verbose_name_plural = "Estados do Projeto"
+        ordering = ['ordem', 'nome']
+
+    def __str__(self):
+        return self.nome
 
 
 class TipoProjeto(models.Model):
@@ -23,9 +55,16 @@ class TipoProjeto(models.Model):
 
 
 class Tecnico(models.Model):
-    """Cadastro dos profissionais técnicos (gerenciado na tela de Gerenciamento)"""
+    """Cadastro dos profissionais técnicos"""
+    usuario = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tecnico",
+        verbose_name="Usuário do Sistema"
+    )
     nome = models.CharField("Nome Completo", max_length=150)
-    area = models.CharField("Área de Atuação", max_length=100, help_text="Ex: Termografia, SPDA, Projetos Elétricos, Subestação")
     telefone = models.CharField("Telefone / WhatsApp", max_length=20, blank=True, null=True)
     ativo = models.BooleanField("Ativo", default=True)
 
@@ -35,7 +74,7 @@ class Tecnico(models.Model):
         ordering = ['nome']
 
     def __str__(self):
-        return f"{self.nome} ({self.area})"
+        return self.nome
 
 
 class TarefaPadrao(models.Model):
@@ -75,7 +114,7 @@ class Projeto(models.Model):
     tipo_projeto = models.ForeignKey(TipoProjeto, on_delete=models.PROTECT, related_name="projetos")
     
     titulo_escopo = models.CharField("Título / Resumo do Escopo", max_length=255)
-    status = models.CharField("Status", max_length=30, choices=STATUS_CHOICES, default='planejamento')
+    status = models.CharField("Status", max_length=60, default='Em Planejamento')
     data_abertura = models.DateField("Data de Abertura", default=date.today)
     data_previsao_entrega = models.DateField("Previsão de Entrega", null=True, blank=True)
     
@@ -100,6 +139,25 @@ class Projeto(models.Model):
     def __str__(self):
         return f"OS {self.numero_os} - {self.cliente.nome_fantasia}"
 
+    @property
+    def cor_status(self):
+        st = StatusProjeto.objects.filter(nome=self.status).first()
+        if st:
+            return st.cor
+        mapa = {
+            'planejamento': 'info',
+            'Em Planejamento': 'info',
+            'em_andamento': 'primary',
+            'Em Execução': 'primary',
+            'bloqueado': 'danger',
+            'Aguardando Cliente': 'danger',
+            'concluido': 'success',
+            'Concluído': 'success',
+            'cancelado': 'secondary',
+            'Cancelado': 'secondary',
+        }
+        return mapa.get(self.status, 'secondary')
+
 
 class Tarefa(models.Model):
     """Tarefas atribuídas ao projeto específico com técnico e data"""
@@ -107,6 +165,7 @@ class Tarefa(models.Model):
     nome = models.CharField("Nome da Tarefa", max_length=200)
     tecnico_responsavel = models.ForeignKey(Tecnico, on_delete=models.SET_NULL, null=True, blank=True, related_name="tarefas")
     data_agendada = models.DateField("Data Programada", null=True, blank=True)
+    concluida = models.BooleanField("Concluída?", default=False)
 
     class Meta:
         verbose_name = "Tarefa do Projeto"

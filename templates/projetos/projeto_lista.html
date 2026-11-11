@@ -81,17 +81,9 @@
                             </span>
                         </td>
                         <td>
-                            {% if p.status == 'planejamento' %}
-                                <span class="badge bg-info text-dark">Planejamento</span>
-                            {% elif p.status == 'em_andamento' %}
-                                <span class="badge bg-primary">Em Execução</span>
-                            {% elif p.status == 'bloqueado' %}
-                                <span class="badge bg-danger">Aguardando Cliente</span>
-                            {% elif p.status == 'concluido' %}
-                                <span class="badge bg-success">Concluído</span>
-                            {% else %}
-                                <span class="badge bg-secondary">{{ p.get_status_display }}</span>
-                            {% endif %}
+                            <span class="badge bg-{{ p.cor_status }} {% if p.cor_status == 'info' or p.cor_status == 'warning' %}text-dark{% endif %}">
+                                {{ p.status }}
+                            </span>
                         </td>
                         <td class="text-end" onclick="event.stopPropagation();">
                             <a href="{% url 'projeto_editar' p.pk %}" class="btn btn-sm btn-outline-primary me-1" title="Editar Projeto">

@@ -14,7 +14,7 @@
                 <i class="bi bi-file-earmark-text text-primary me-2"></i>
                 {% if projeto %}Editar Ordem de Serviço: {{ projeto.numero_os }}{% else %}Nova Ordem de Serviço / Projeto{% endif %}
             </h3>
-            <p class="text-muted mb-0">Preencha os dados do cliente, escolha o tipo de serviço e organize as datas e técnicos das tarefas.</p>
+            <p class="text-muted mb-0">Preencha o escopo, previsão de entrega, dados do cliente e agendamento das tarefas técnicas.</p>
         </div>
         <a href="{% url 'projeto_lista' %}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Voltar à Lista
@@ -31,17 +31,27 @@
             </h5>
 
             <div class="row g-3">
+                <!-- Primeira Opção: Título do Escopo e Previsão de Entrega -->
+                <div class="col-md-8">
+                    <label class="form-label fw-bold text-primary">Título do Escopo / Resumo do Pedido *</label>
+                    {{ form.titulo_escopo }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-primary">Previsão de Entrega Final</label>
+                    {{ form.data_previsao_entrega }}
+                </div>
+
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Número da OS *</label>
                     {{ form.numero_os }}
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label fw-bold text-primary">Tipo de Serviço / Projeto *</label>
+                    <label class="form-label fw-semibold">Tipo de Serviço / Projeto *</label>
                     {{ form.tipo_projeto }}
                     <div class="form-text">As tarefas padrão mudam de acordo com este campo.</div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label fw-semibold">Status Inicial</label>
+                    <label class="form-label fw-semibold">Estado / Status do Projeto</label>
                     {{ form.status }}
                 </div>
                 <div class="col-md-3">
@@ -58,26 +68,17 @@
                     {{ form.filial }}
                     <div class="form-text">Selecione apenas se o atendimento for em uma filial.</div>
                 </div>
-
-                <div class="col-md-8">
-                    <label class="form-label fw-semibold">Título do Escopo / Resumo do Pedido *</label>
-                    {{ form.titulo_escopo }}
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Previsão de Entrega Final</label>
-                    {{ form.data_previsao_entrega }}
-                </div>
             </div>
         </div>
 
-        <!-- BLOCO 2: TAREFAS E DELEGAÇÃO -->
+        <!-- BLOCO 2: TAREFAS E DELEGAÇÃO (AGENDAMENTO) -->
         <div class="card card-custom p-4 mb-4">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
                 <div>
                     <h5 class="fw-bold text-primary mb-0">
                         <i class="bi bi-list-check me-1"></i> 2. Tarefas e Agendamento Técnico
                     </h5>
-                    <small class="text-muted">Selecione o técnico e a data de cada tarefa. Exclua as que não forem necessárias neste serviço.</small>
+                    <small class="text-muted">Marque a flag na primeira coluna ao concluir cada tarefa. Ao concluir todas, o sistema perguntará se deseja mudar o status do projeto para Concluído.</small>
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-tarefa">
                     <i class="bi bi-plus-circle me-1"></i> Adicionar Tarefa Avulsa
@@ -88,15 +89,20 @@
                 <table class="table table-bordered align-middle mb-0" id="tabela-tarefas">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 45%;">Nome da Tarefa</th>
-                            <th style="width: 30%;">Técnico Responsável</th>
+                            <th style="width: 10%;" class="text-center">Concluída?</th>
+                            <th style="width: 40%;">Nome da Tarefa</th>
+                            <th style="width: 25%;">Técnico Responsável</th>
                             <th style="width: 18%;">Data Programada</th>
                             <th style="width: 7%;" class="text-center">Ação</th>
                         </tr>
                     </thead>
                     <tbody id="corpo-tarefas">
                         {% for item in tarefas_iniciais %}
-                        <tr class="linha-tarefa">
+                        <tr class="linha-tarefa {% if item.concluida %}table-success{% endif %}">
+                            <td class="text-center">
+                                <input type="hidden" name="tarefa_concluida[]" class="input-hidden-concluida" value="{% if item.concluida %}1{% else %}0{% endif %}">
+                                <input type="checkbox" class="form-check-input fs-5 check-tarefa-concluida" {% if item.concluida %}checked{% endif %} title="Marcar tarefa como concluída">
+                            </td>
                             <td>
                                 <input type="text" name="tarefa_nome[]" class="form-control form-control-sm" value="{{ item.nome }}" required placeholder="Nome da tarefa">
                             </td>
@@ -105,7 +111,7 @@
                                     <option value="">Selecione o Técnico...</option>
                                     {% for tec in tecnicos %}
                                     <option value="{{ tec.id }}" {% if item.tecnico_id == tec.id %}selected{% endif %}>
-                                        {{ tec.nome }} ({{ tec.area }})
+                                        {{ tec.nome }}
                                     </option>
                                     {% endfor %}
                                 </select>
@@ -121,7 +127,7 @@
                         </tr>
                         {% empty %}
                         <tr id="aviso-sem-tarefas">
-                            <td colspan="4" class="text-center text-muted py-4">
+                            <td colspan="5" class="text-center text-muted py-4">
                                 <i class="bi bi-arrow-up-circle text-primary fs-5 d-block mb-1"></i>
                                 Selecione um <strong>Tipo de Serviço / Projeto</strong> no Bloco 1 acima para carregar automaticamente as tarefas padrão.
                             </td>
@@ -169,6 +175,10 @@
 <!-- Modelo invisível para adicionar tarefas extras pelo JavaScript -->
 <template id="template-linha-tarefa">
     <tr class="linha-tarefa">
+        <td class="text-center">
+            <input type="hidden" name="tarefa_concluida[]" class="input-hidden-concluida" value="0">
+            <input type="checkbox" class="form-check-input fs-5 check-tarefa-concluida" title="Marcar tarefa como concluída">
+        </td>
         <td>
             <input type="text" name="tarefa_nome[]" class="form-control form-control-sm" placeholder="Nome da tarefa" required>
         </td>
@@ -176,7 +186,7 @@
             <select name="tarefa_tecnico[]" class="form-select form-select-sm">
                 <option value="">Selecione o Técnico...</option>
                 {% for tec in tecnicos %}
-                <option value="{{ tec.id }}">{{ tec.nome }} ({{ tec.area }})</option>
+                <option value="{{ tec.id }}">{{ tec.nome }}</option>
                 {% endfor %}
             </select>
         </td>
@@ -199,6 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectCliente = document.getElementById('select-cliente');
     const selectFilial = document.getElementById('select-filial');
     const selectTipo = document.querySelector('select[name="tipo_projeto"]');
+    const selectStatus = document.getElementById('select-status') || document.querySelector('select[name="status"]');
     const corpoTarefas = document.getElementById('corpo-tarefas');
     const btnAddTarefa = document.getElementById('btn-add-tarefa');
     const templateLinha = document.getElementById('template-linha-tarefa');
@@ -209,6 +220,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const inputValidade = document.getElementById('input-validade');
     const inputDataAlerta = document.getElementById('input-data-alerta');
     const inputAbertura = document.querySelector('input[name="data_abertura"]');
+
+    const statusConcluidoAlvo = "{{ status_concluido_nome|default:'Concluído'|escapejs }}";
 
     // Mapa de configuração de tipos que exigem lembrete: {id_tipo: true/false}
     let tiposLembreteMap = {};
@@ -288,7 +301,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!selectTipo) return;
         const tipoId = parseInt(selectTipo.value, 10);
 
-        // Controle do Bloco de Renovação
         const exigeLembrete = Boolean(tipoId && tiposLembreteMap[tipoId]);
         if (blocoRenovacao) {
             if (exigeLembrete) {
@@ -306,11 +318,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Carregamento de Tarefas Padrão
         if (!tipoId) {
             corpoTarefas.innerHTML = `
                 <tr id="aviso-sem-tarefas">
-                    <td colspan="4" class="text-center text-muted py-4">
+                    <td colspan="5" class="text-center text-muted py-4">
                         Selecione um Tipo de Serviço / Projeto acima para carregar as tarefas.
                     </td>
                 </tr>`;
@@ -325,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (tarefas.length === 0) {
                     corpoTarefas.innerHTML = `
                         <tr id="aviso-sem-tarefas">
-                            <td colspan="4" class="text-center text-muted py-3">
+                            <td colspan="5" class="text-center text-muted py-3">
                                 Nenhuma tarefa padrão cadastrada para este tipo. Use o botão "Adicionar Tarefa Avulsa".
                             </td>
                         </tr>`;
@@ -341,12 +352,12 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(() => {
                 corpoTarefas.innerHTML = `
                     <tr>
-                        <td colspan="4" class="text-center text-danger py-3">Erro ao buscar tarefas padrão.</td>
+                        <td colspan="5" class="text-center text-danger py-3">Erro ao buscar tarefas padrão.</td>
                     </tr>`;
             });
     }
 
-    // 4. Delegação e botões da tabela de tarefas
+    // 4. Delegação de eventos na tabela de tarefas (Conclusão e Exclusão)
     if (btnAddTarefa) {
         btnAddTarefa.addEventListener('click', function() {
             const aviso = document.getElementById('aviso-sem-tarefas');
@@ -362,6 +373,54 @@ document.addEventListener('DOMContentLoaded', function() {
             const btn = e.target.closest('.btn-remover-linha');
             if (btn) {
                 btn.closest('tr').remove();
+            }
+        });
+
+        // Monitora a flag de conclusão de cada tarefa
+        corpoTarefas.addEventListener('change', function(e) {
+            if (e.target && e.target.classList.contains('check-tarefa-concluida')) {
+                const tr = e.target.closest('tr');
+                const hiddenInput = tr.querySelector('.input-hidden-concluida');
+                const marcada = e.target.checked;
+
+                if (hiddenInput) {
+                    hiddenInput.value = marcada ? '1' : '0';
+                }
+                if (marcada) {
+                    tr.classList.add('table-success');
+                } else {
+                    tr.classList.remove('table-success');
+                }
+
+                // Se marcou a tarefa como concluída, verifica se TODAS as tarefas da tabela estão concluídas
+                if (marcada) {
+                    const todosChecks = Array.from(corpoTarefas.querySelectorAll('.check-tarefa-concluida'));
+                    const todasConcluidas = todosChecks.length > 0 && todosChecks.every(chk => chk.checked);
+
+                    if (todasConcluidas && selectStatus) {
+                        const jaConcluido = (selectStatus.value === statusConcluidoAlvo || selectStatus.value === 'concluido');
+                        if (!jaConcluido) {
+                            const desejaMudar = confirm(
+                                `Todas as tarefas foram marcadas como concluídas!\n\nDeseja alterar o Status do Projeto para "${statusConcluidoAlvo}"?`
+                            );
+                            if (desejaMudar) {
+                                // Procura a opção correspondente no select de status
+                                for (let i = 0; i < selectStatus.options.length; i++) {
+                                    const opt = selectStatus.options[i];
+                                    if (
+                                        opt.value === statusConcluidoAlvo ||
+                                        opt.text === statusConcluidoAlvo ||
+                                        opt.value.toLowerCase().includes('conclu') ||
+                                        opt.text.toLowerCase().includes('conclu')
+                                    ) {
+                                        selectStatus.selectedIndex = i;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         });
     }

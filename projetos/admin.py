@@ -22,9 +22,9 @@ class TipoProjetoAdmin(admin.ModelAdmin):
 
 @admin.register(Tecnico)
 class TecnicoAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'area', 'telefone', 'ativo')
-    search_fields = ('nome', 'area')
-    list_filter = ('area', 'ativo')
+    list_display = ('nome', 'usuario', 'telefone', 'ativo')
+    search_fields = ('nome', 'usuario__username')
+    list_filter = ('ativo',)
 
 
 class TarefaInline(admin.TabularInline):

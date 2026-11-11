@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Gerenciar Usuários do Sistema{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-shield-lock-fill text-dark me-2"></i> Usuários do Sistema (Logins)
+            </h3>
+            <p class="text-muted mb-0">Cadastre contas de acesso (usuário e senha) para vincular aos técnicos da equipe.</p>
+        </div>
+        <a href="{% url 'gerenciamento_hub' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar ao Gerenciamento
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Formulário de Novo Usuário -->
+        <div class="col-lg-4">
+            <div class="card card-custom p-4">
+                <h5 class="fw-bold text-primary border-bottom pb-2 mb-3">Novo Usuário de Acesso</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Login (Usuário) *</label>
+                        {{ form.username }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nome de Exibição</label>
+                        {{ form.first_name }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">E-mail</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Senha de Acesso *</label>
+                        {{ form.senha }}
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        {{ form.is_active }}
+                        <label class="form-check-label fw-semibold" for="{{ form.is_active.id_for_label }}">Usuário Ativo</label>
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100">
+                        <i class="bi bi-person-plus-fill me-1"></i> Criar Usuário
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lista de Usuários -->
+        <div class="col-lg-8">
+            <div class="card card-custom p-4">
+                <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Contas Cadastradas</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Login (Username)</th>
+                                <th>Nome / E-mail</th>
+                                <th>Técnico Vinculado</th>
+                                <th>Status</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in usuarios %}
+                            <tr>
+                                <td class="fw-bold">
+                                    <i class="bi bi-person-circle text-secondary me-1"></i> {{ u.username }}
+                                </td>
+                                <td>
+                                    <div>{{ u.first_name|default:"-" }}</div>
+                                    <small class="text-muted">{{ u.email }}</small>
+                                </td>
+                                <td>
+                                    {% if u.tecnico %}
+                                        <span class="badge bg-primary">{{ u.tecnico.nome }}</span>
+                                    {% else %}
+                                        <span class="text-muted small">Sem técnico vinculado</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if u.is_active %}
+                                        <span class="badge bg-success">Ativo</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inativo</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'usuario_editar' u.pk %}" class="btn btn-sm btn-outline-primary me-1" title="Editar / Redefinir Senha">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    {% if u != request.user %}
+                                    <form method="post" action="{% url 'usuario_excluir' u.pk %}" class="d-inline" onsubmit="return confirm('Remover usuário {{ u.username }}?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">Nenhum usuário cadastrado.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

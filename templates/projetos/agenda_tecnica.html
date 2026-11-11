@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Agenda Técnica{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-5">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-calendar-week text-primary me-2"></i> Agenda Técnica
+            </h3>
+            <p class="text-muted mb-0">Cronograma de tarefas e visitas em campo alocadas para cada profissional técnico.</p>
+        </div>
+        <a href="{% url 'projeto_novo' %}" class="btn btn-primary shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Nova OS / Agendamento
+        </a>
+    </div>
+
+    <!-- Filtros por Técnico e Período -->
+    <div class="card card-custom p-3 mb-4">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small fw-bold text-secondary mb-1">Filtrar por Profissional Técnico</label>
+                <select name="tecnico" class="form-select" onchange="this.form.submit()">
+                    <option value="">Todos os Técnicos</option>
+                    {% for tec in tecnicos %}
+                    <option value="{{ tec.id }}" {% if tecnico_filtro == tec.id|stringformat:"s" %}selected{% endif %}>
+                        {{ tec.nome }}
+                    </option>
+                    {% endfor %}
+                    <option value="sem_tecnico" {% if tecnico_filtro == 'sem_tecnico' %}selected{% endif %}>
+                        -- Sem Técnico Definido --
+                    </option>
+                </select>
+            </div>
+
+            <div class="col-md-5">
+                <label class="form-label small fw-bold text-secondary mb-1">Período</label>
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="periodo" id="per-todos" value="todos" {% if periodo_filtro == 'todos' %}checked{% endif %} onchange="this.form.submit()">
+                    <label class="btn btn-outline-dark" for="per-todos">Todas</label>
+
+                    <input type="radio" class="btn-check" name="periodo" id="per-hoje" value="hoje" {% if periodo_filtro == 'hoje' %}checked{% endif %} onchange="this.form.submit()">
+                    <label class="btn btn-outline-dark" for="per-hoje">Hoje</label>
+
+                    <input type="radio" class="btn-check" name="periodo" id="per-semana" value="semana" {% if periodo_filtro == 'semana' %}checked{% endif %} onchange="this.form.submit()">
+                    <label class="btn btn-outline-dark" for="per-semana">Esta Semana</label>
+
+                    <input type="radio" class="btn-check" name="periodo" id="per-mes" value="mes" {% if periodo_filtro == 'mes' %}checked{% endif %} onchange="this.form.submit()">
+                    <label class="btn btn-outline-dark" for="per-mes">Este Mês</label>
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                {% if tecnico_filtro or periodo_filtro != 'todos' %}
+                <a href="{% url 'agenda_tecnica' %}" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-x-lg me-1"></i> Limpar
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabela de Agendamentos -->
+    <div class="card card-custom p-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 18%;">Data / Dia da Semana</th>
+                        <th style="width: 18%;">Técnico Responsável</th>
+                        <th style="width: 24%;">Tarefa</th>
+                        <th style="width: 12%;">Nº OS / Tipo</th>
+                        <th style="width: 20%;">Cliente / Local</th>
+                        <th style="width: 8%;" class="text-end">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tarefas %}
+                    <tr>
+                        <td>
+                            {% if t.data_agendada %}
+                                <div class="fw-bold {% if t.data_agendada < hoje %}text-danger{% elif t.data_agendada == hoje %}text-success{% else %}text-dark{% endif %}">
+                                    <i class="bi bi-calendar-event me-1"></i> {{ t.data_agendada|date:"d/m/Y" }}
+                                </div>
+                                <small class="text-muted text-capitalize">{{ t.data_agendada|date:"l" }}</small>
+                                {% if t.data_agendada == hoje %}
+                                    <span class="badge bg-success ms-1">Hoje</span>
+                                {% elif t.data_agendada < hoje %}
+                                    <span class="badge bg-danger ms-1">Atrasada</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-light text-muted border">Data a definir</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if t.tecnico_responsavel %}
+                                <span class="fw-semibold text-dark">
+                                    <i class="bi bi-person-check-fill text-primary me-1"></i> {{ t.tecnico_responsavel.nome }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Sem técnico</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-semibold text-dark">{{ t.nome }}</td>
+                        <td>
+                            <span class="badge bg-dark">OS {{ t.projeto.numero_os }}</span>
+                            <div class="small text-muted mt-1">{{ t.projeto.tipo_projeto.nome }}</div>
+                        </td>
+                        <td>
+                            <strong class="text-primary">{{ t.projeto.cliente.nome_fantasia }}</strong>
+                            {% if t.projeto.filial %}
+                                <div class="small text-muted"><i class="bi bi-geo-alt"></i> {{ t.projeto.filial.identificacao }} ({{ t.projeto.filial.cidade }})</div>
+                            {% else %}
+                                <div class="small text-muted"><i class="bi bi-building"></i> Matriz ({{ t.projeto.cliente.cidade }})</div>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'projeto_editar' t.projeto.pk %}" class="btn btn-sm btn-outline-primary" title="Abrir OS">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            <i class="bi bi-calendar-x fs-2 d-block mb-2 text-secondary"></i>
+                            Nenhuma tarefa encontrada para os filtros selecionados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
