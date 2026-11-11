@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if projeto %}Editar OS {{ projeto.numero_os }}{% else %}Nova Ordem de Serviço{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-5">
+
+    <!-- Topo da Página -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-file-earmark-text text-primary me-2"></i>
+                {% if projeto %}Editar Ordem de Serviço: {{ projeto.numero_os }}{% else %}Nova Ordem de Serviço / Projeto{% endif %}
+            </h3>
+            <p class="text-muted mb-0">Preencha os dados do cliente, escolha o tipo de serviço e organize as datas e técnicos das tarefas.</p>
+        </div>
+        <a href="{% url 'projeto_lista' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar à Lista
+        </a>
+    </div>
+
+    <form method="post" id="formProjeto">
+        {% csrf_token %}
+
+        <!-- BLOCO 1: DADOS DO PROJETO E CLIENTE -->
+        <div class="card card-custom p-4 mb-4">
+            <h5 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                <i class="bi bi-info-circle me-1"></i> 1. Identificação do Projeto
+            </h5>
+
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Número da OS *</label>
+                    {{ form.numero_os }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-primary">Tipo de Serviço / Projeto *</label>
+                    {{ form.tipo_projeto }}
+                    <div class="form-text">As tarefas padrão mudam de acordo com este campo.</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Status Inicial</label>
+                    {{ form.status }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Data de Abertura</label>
+                    {{ form.data_abertura }}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Cliente (Matriz) *</label>
+                    {{ form.cliente }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Filial / Local do Atendimento</label>
+                    {{ form.filial }}
+                    <div class="form-text">Selecione apenas se o atendimento for em uma filial.</div>
+                </div>
+
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold">Título do Escopo / Resumo do Pedido *</label>
+                    {{ form.titulo_escopo }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Previsão de Entrega Final</label>
+                    {{ form.data_previsao_entrega }}
+                </div>
+            </div>
+        </div>
+
+        <!-- BLOCO 2: TAREFAS E DELEGAÇÃO -->
+        <div class="card card-custom p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                <div>
+                    <h5 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-list-check me-1"></i> 2. Tarefas e Agendamento Técnico
+                    </h5>
+                    <small class="text-muted">Selecione o técnico e a data de cada tarefa. Exclua as que não forem necessárias neste serviço.</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-tarefa">
+                    <i class="bi bi-plus-circle me-1"></i> Adicionar Tarefa Avulsa
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0" id="tabela-tarefas">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 45%;">Nome da Tarefa</th>
+                            <th style="width: 30%;">Técnico Responsável</th>
+                            <th style="width: 18%;">Data Programada</th>
+                            <th style="width: 7%;" class="text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tarefas">
+                        {% for item in tarefas_iniciais %}
+                        <tr class="linha-tarefa">
+                            <td>
+                                <input type="text" name="tarefa_nome[]" class="form-control form-control-sm" value="{{ item.nome }}" required placeholder="Nome da tarefa">
+                            </td>
+                            <td>
+                                <select name="tarefa_tecnico[]" class="form-select form-select-sm">
+                                    <option value="">Selecione o Técnico...</option>
+                                    {% for tec in tecnicos %}
+                                    <option value="{{ tec.id }}" {% if item.tecnico_id == tec.id %}selected{% endif %}>
+                                        {{ tec.nome }} ({{ tec.area }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <input type="date" name="tarefa_data[]" class="form-control form-control-sm" value="{{ item.data }}">
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-remover-linha" title="Excluir tarefa">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr id="aviso-sem-tarefas">
+                            <td colspan="4" class="text-center text-muted py-4">
+                                <i class="bi bi-arrow-up-circle text-primary fs-5 d-block mb-1"></i>
+                                Selecione um <strong>Tipo de Serviço / Projeto</strong> no Bloco 1 acima para carregar automaticamente as tarefas padrão.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- BLOCO 3: GESTÃO DE RENOVAÇÃO / VALIDADE -->
+        <div class="card card-custom p-4 mb-4 border-warning d-none" id="bloco-renovacao">
+            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                <i class="bi bi-bell me-1 text-warning"></i> 3. Lembrete de Renovação Periódica (Laudos / Inspeções)
+            </h5>
+            <div class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <div class="form-check form-switch pt-2">
+                        {{ form.requer_renovacao }}
+                        <label class="form-check-label fw-semibold" for="{{ form.requer_renovacao.id_for_label }}">
+                            Requer Renovação Futura?
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-4 area-renovacao">
+                    <label class="form-label fw-semibold">Validade Padrão (Meses)</label>
+                    {{ form.meses_validade }}
+                </div>
+                <div class="col-md-4 area-renovacao">
+                    <label class="form-label fw-semibold">Data do Alerta no Painel</label>
+                    {{ form.data_alerta_renovacao }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Botão Salvar -->
+        <div class="d-flex justify-content-end mb-4">
+            <button type="submit" class="btn btn-success btn-lg px-5 shadow">
+                <i class="bi bi-check-circle me-1"></i> Gravar Projeto Completo
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Modelo invisível para adicionar tarefas extras pelo JavaScript -->
+<template id="template-linha-tarefa">
+    <tr class="linha-tarefa">
+        <td>
+            <input type="text" name="tarefa_nome[]" class="form-control form-control-sm" placeholder="Nome da tarefa" required>
+        </td>
+        <td>
+            <select name="tarefa_tecnico[]" class="form-select form-select-sm">
+                <option value="">Selecione o Técnico...</option>
+                {% for tec in tecnicos %}
+                <option value="{{ tec.id }}">{{ tec.nome }} ({{ tec.area }})</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <input type="date" name="tarefa_data[]" class="form-control form-control-sm">
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remover-linha" title="Excluir tarefa">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    </tr>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Referências DOM
+    const selectCliente = document.getElementById('select-cliente');
+    const selectFilial = document.getElementById('select-filial');
+    const selectTipo = document.querySelector('select[name="tipo_projeto"]');
+    const corpoTarefas = document.getElementById('corpo-tarefas');
+    const btnAddTarefa = document.getElementById('btn-add-tarefa');
+    const templateLinha = document.getElementById('template-linha-tarefa');
+
+    const blocoRenovacao = document.getElementById('bloco-renovacao');
+    const checkRenovacao = document.getElementById('id_requer_renovacao');
+    const areasRenovacao = document.querySelectorAll('.area-renovacao');
+    const inputValidade = document.getElementById('input-validade');
+    const inputDataAlerta = document.getElementById('input-data-alerta');
+    const inputAbertura = document.querySelector('input[name="data_abertura"]');
+
+    // Mapa de configuração de tipos que exigem lembrete: {id_tipo: true/false}
+    let tiposLembreteMap = {};
+    try {
+        tiposLembreteMap = JSON.parse('{{ tipos_lembrete_json|default:"{}"|safe }}');
+    } catch (e) {
+        console.error('Erro ao ler tipos_lembrete_json:', e);
+    }
+
+    // 1. Atualizar filiais conforme cliente selecionado
+    if (selectCliente && selectFilial) {
+        selectCliente.addEventListener('change', function() {
+            const clienteId = this.value;
+            selectFilial.innerHTML = '<option value="">A carregar filiais...</option>';
+
+            if (!clienteId) {
+                selectFilial.innerHTML = '<option value="">--------- (Atendimento na Matriz)</option>';
+                return;
+            }
+
+            fetch(`/projetos/api/filiais/${clienteId}/`)
+                .then(r => r.json())
+                .then(dados => {
+                    selectFilial.innerHTML = '<option value="">--------- (Atendimento na Matriz)</option>';
+                    dados.forEach(f => {
+                        const opt = document.createElement('option');
+                        opt.value = f.id;
+                        opt.textContent = `${f.identificacao} (${f.cidade})`;
+                        selectFilial.appendChild(opt);
+                    });
+                })
+                .catch(() => {
+                    selectFilial.innerHTML = '<option value="">Erro ao carregar filiais</option>';
+                });
+        });
+    }
+
+    // 2. Cálculo exato da data de renovação (ano/mês/dia sem drift de fuso horário UTC)
+    function calcularDataFutura(dataIso, mesesAdicionar) {
+        if (!dataIso) return '';
+        const partes = dataIso.split('-');
+        if (partes.length !== 3) return '';
+
+        const ano = parseInt(partes[0], 10);
+        const mes = parseInt(partes[1], 10) - 1;
+        const dia = parseInt(partes[2], 10);
+
+        const dataObj = new Date(ano, mes, dia);
+        dataObj.setMonth(dataObj.getMonth() + mesesAdicionar);
+
+        const anoFim = dataObj.getFullYear();
+        const mesFim = String(dataObj.getMonth() + 1).padStart(2, '0');
+        const diaFim = String(dataObj.getDate()).padStart(2, '0');
+
+        return `${anoFim}-${mesFim}-${diaFim}`;
+    }
+
+    function atualizarDataAlerta(forcar = false) {
+        if (!checkRenovacao) return;
+        const ativo = checkRenovacao.checked;
+
+        areasRenovacao.forEach(el => {
+            el.style.opacity = ativo ? '1' : '0.4';
+            el.querySelectorAll('input').forEach(i => i.disabled = !ativo);
+        });
+
+        if (ativo && inputAbertura && inputAbertura.value) {
+            const meses = parseInt(inputValidade.value, 10) || 12;
+            if (!inputDataAlerta.value || forcar) {
+                inputDataAlerta.value = calcularDataFutura(inputAbertura.value, meses);
+            }
+        }
+    }
+
+    // 3. Exibição condicional do Bloco 3 e carregamento das tarefas padrão
+    function atualizarPeloTipoProjeto() {
+        if (!selectTipo) return;
+        const tipoId = parseInt(selectTipo.value, 10);
+
+        // Controle do Bloco de Renovação
+        const exigeLembrete = Boolean(tipoId && tiposLembreteMap[tipoId]);
+        if (blocoRenovacao) {
+            if (exigeLembrete) {
+                blocoRenovacao.classList.remove('d-none');
+                if (checkRenovacao && !checkRenovacao.checked) {
+                    checkRenovacao.checked = true;
+                }
+                atualizarDataAlerta(true);
+            } else {
+                blocoRenovacao.classList.add('d-none');
+                if (checkRenovacao) {
+                    checkRenovacao.checked = false;
+                }
+                atualizarDataAlerta(false);
+            }
+        }
+
+        // Carregamento de Tarefas Padrão
+        if (!tipoId) {
+            corpoTarefas.innerHTML = `
+                <tr id="aviso-sem-tarefas">
+                    <td colspan="4" class="text-center text-muted py-4">
+                        Selecione um Tipo de Serviço / Projeto acima para carregar as tarefas.
+                    </td>
+                </tr>`;
+            return;
+        }
+
+        fetch(`/projetos/api/tarefas-padrao/${tipoId}/`)
+            .then(r => r.json())
+            .then(tarefas => {
+                corpoTarefas.innerHTML = '';
+
+                if (tarefas.length === 0) {
+                    corpoTarefas.innerHTML = `
+                        <tr id="aviso-sem-tarefas">
+                            <td colspan="4" class="text-center text-muted py-3">
+                                Nenhuma tarefa padrão cadastrada para este tipo. Use o botão "Adicionar Tarefa Avulsa".
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                tarefas.forEach(t => {
+                    const clone = templateLinha.content.cloneNode(true);
+                    clone.querySelector('input[name="tarefa_nome[]"]').value = t.nome;
+                    corpoTarefas.appendChild(clone);
+                });
+            })
+            .catch(() => {
+                corpoTarefas.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-danger py-3">Erro ao buscar tarefas padrão.</td>
+                    </tr>`;
+            });
+    }
+
+    // 4. Delegação e botões da tabela de tarefas
+    if (btnAddTarefa) {
+        btnAddTarefa.addEventListener('click', function() {
+            const aviso = document.getElementById('aviso-sem-tarefas');
+            if (aviso) aviso.remove();
+
+            const clone = templateLinha.content.cloneNode(true);
+            corpoTarefas.appendChild(clone);
+        });
+    }
+
+    if (corpoTarefas) {
+        corpoTarefas.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-remover-linha');
+            if (btn) {
+                btn.closest('tr').remove();
+            }
+        });
+    }
+
+    // 5. Registros de eventos
+    if (selectTipo) {
+        selectTipo.addEventListener('change', atualizarPeloTipoProjeto);
+    }
+
+    if (checkRenovacao) {
+        checkRenovacao.addEventListener('change', () => atualizarDataAlerta(true));
+    }
+
+    if (inputValidade) {
+        inputValidade.addEventListener('input', () => atualizarDataAlerta(true));
+    }
+
+    if (inputAbertura) {
+        inputAbertura.addEventListener('change', () => atualizarDataAlerta(true));
+    }
+
+    // Inicialização da tela (caso seja edição com dados já carregados)
+    if (selectTipo && selectTipo.value) {
+        const tipoId = parseInt(selectTipo.value, 10);
+        const exigeLembrete = Boolean(tipoId && tiposLembreteMap[tipoId]);
+        if (blocoRenovacao) {
+            if (exigeLembrete) {
+                blocoRenovacao.classList.remove('d-none');
+            } else {
+                blocoRenovacao.classList.add('d-none');
+            }
+        }
+        atualizarDataAlerta(false);
+    }
+});
+</script>
+{% endblock %}

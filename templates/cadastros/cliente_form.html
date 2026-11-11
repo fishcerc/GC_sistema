@@ -1,0 +1,355 @@
+{% extends 'base.html' %}
+
+{% block title %}Registo de Cliente{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-buildings text-primary me-2"></i>
+                {% if cliente %}Editar Cliente: {{ cliente.nome_fantasia }}{% else %}Registo de Cliente (Matriz){% endif %}
+            </h3>
+            <p class="text-muted mb-0">Insira as informações da matriz, unidades filiais e parâmetros elétricos.</p>
+        </div>
+        <a href="{% url 'cliente_lista' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar à Lista
+        </a>
+    </div>
+
+    <form method="post" id="clienteForm">
+        {% csrf_token %}
+
+        <!-- Bloco 1: Matriz -->
+        <div class="card card-custom p-4 mb-4" id="bloco-matriz">
+            <h5 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                <i class="bi bi-building me-2"></i> 1. Identificação da Matriz (Pessoa Jurídica)
+            </h5>
+            
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Razão Social</label>
+                    {{ form.razao_social }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Nome Fantasia</label>
+                    {{ form.nome_fantasia }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">CNPJ</label>
+                    {{ form.cnpj }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Inscrição Estadual</label>
+                    {{ form.inscricao_estadual }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Inscrição Municipal</label>
+                    {{ form.inscricao_municipal }}
+                </div>
+            </div>
+
+            <h6 class="fw-bold text-secondary border-bottom pb-1 mb-3">
+                <i class="bi bi-geo-alt me-1"></i> Endereço da Matriz
+            </h6>
+
+            <div class="row g-3 mb-3">
+                <!-- CEP como primeiro campo do endereço -->
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-primary">CEP</label>
+                    {{ form.cep }}
+                    <div class="form-text">Digite o CEP para autopreencher</div>
+                </div>
+                <div class="col-md-7">
+                    <label class="form-label fw-semibold">Logradouro / Rua</label>
+                    {{ form.logradouro }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Número</label>
+                    {{ form.numero }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Complemento</label>
+                    {{ form.complemento }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Bairro</label>
+                    {{ form.bairro }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Cidade</label>
+                    {{ form.cidade }}
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label fw-semibold">UF</label>
+                    {{ form.estado }}
+                </div>
+            </div>
+
+            <h6 class="fw-bold text-secondary border-bottom pb-1 mb-3">
+                <i class="bi bi-telephone me-1"></i> Contatos da Matriz
+            </h6>
+
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Pessoa de Contato</label>
+                    {{ form.pessoa_contato }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Telefone Fixo</label>
+                    {{ form.telefone }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Celular / WhatsApp</label>
+                    {{ form.celular }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">E-mail</label>
+                    {{ form.email }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Bloco 2: Filiais com CEP em primeiro lugar -->
+        <div class="card card-custom p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                <h5 class="fw-bold text-primary m-0">
+                    <i class="bi bi-diagram-3 me-2"></i> 2. Filiais e Outros Endereços
+                </h5>
+                <button type="button" class="btn btn-sm btn-primary" id="btn-add-filial">
+                    <i class="bi bi-plus-circle me-1"></i> Adicionar Filial
+                </button>
+            </div>
+
+            {{ filiais_formset.management_form }}
+            <div id="filiais-container">
+                {% for f_form in filiais_formset %}
+                    <div class="border rounded p-3 mb-3 bg-light filial-row">
+                        {{ f_form.id }}
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">Identificação da Filial</label>
+                                {{ f_form.identificacao }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">CNPJ Filial</label>
+                                {{ f_form.cnpj }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-semibold">Contato Local</label>
+                                {{ f_form.pessoa_contato }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-semibold">Celular Local</label>
+                                {{ f_form.celular }}
+                            </div>
+                        </div>
+
+                        <!-- Endereço da Filial com CEP Primeiro -->
+                        <div class="row g-2">
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold text-primary">CEP</label>
+                                {{ f_form.cep }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold">Logradouro / Rua</label>
+                                {{ f_form.logradouro }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-semibold">Número</label>
+                                {{ f_form.numero }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-semibold">Bairro</label>
+                                {{ f_form.bairro }}
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label small fw-semibold">Cidade</label>
+                                {{ f_form.cidade }}
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label small fw-semibold">UF</label>
+                                {{ f_form.estado }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Modelo invisível para clonagem de nova filial via JavaScript -->
+            <div id="filial-template" class="d-none">
+                <div class="border rounded p-3 mb-3 bg-light filial-row">
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Identificação da Filial</label>
+                            {{ filiais_formset.empty_form.identificacao }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">CNPJ Filial</label>
+                            {{ filiais_formset.empty_form.cnpj }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Contato Local</label>
+                            {{ filiais_formset.empty_form.pessoa_contato }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Celular Local</label>
+                            {{ filiais_formset.empty_form.celular }}
+                        </div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold text-primary">CEP</label>
+                            {{ filiais_formset.empty_form.cep }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Logradouro / Rua</label>
+                            {{ filiais_formset.empty_form.logradouro }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Número</label>
+                            {{ filiais_formset.empty_form.numero }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-semibold">Bairro</label>
+                            {{ filiais_formset.empty_form.bairro }}
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small fw-semibold">Cidade</label>
+                            {{ filiais_formset.empty_form.cidade }}
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small fw-semibold">UF</label>
+                            {{ filiais_formset.empty_form.estado }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bloco 3: Dados de Energia -->
+        <div class="card card-custom p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                <h5 class="fw-bold text-primary m-0">
+                    <i class="bi bi-lightning-charge me-2"></i> 3. Dados Elétricos (Entrada, UC, Demanda e Trafo)
+                </h5>
+                <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" id="btn-add-energia">
+                    <i class="bi bi-plus-circle me-1"></i> Adicionar Dados de Energia
+                </button>
+            </div>
+
+            {{ energia_formset.management_form }}
+            <div id="energia-container">
+                {% for e_form in energia_formset %}
+                    <div class="border rounded p-3 mb-3 bg-light energia-row">
+                        {{ e_form.id }}
+                        <div class="row g-2">
+                            <div class="col-md-2"><label class="form-label small">Unidade Consumidora (UC)</label>{{ e_form.unidade_consumidora }}</div>
+                            <div class="col-md-2"><label class="form-label small">Concessionária</label>{{ e_form.concessionaria }}</div>
+                            <div class="col-md-2"><label class="form-label small">Tensão Atendimento</label>{{ e_form.tensao_fornecimento }}</div>
+                            <div class="col-md-2"><label class="form-label small">Demanda (kW)</label>{{ e_form.demanda_contratada_kw }}</div>
+                            <div class="col-md-2"><label class="form-label small">Potência Trafo (kVA)</label>{{ e_form.potencia_trafo_kva }}</div>
+                            <div class="col-md-2"><label class="form-label small">Tipo Subestação</label>{{ e_form.tipo_subestacao }}</div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div id="energia-template" class="d-none">
+                <div class="border rounded p-3 mb-3 bg-light energia-row">
+                    <div class="row g-2">
+                        <div class="col-md-2"><label class="form-label small">Unidade Consumidora (UC)</label>{{ energia_formset.empty_form.unidade_consumidora }}</div>
+                        <div class="col-md-2"><label class="form-label small">Concessionária</label>{{ energia_formset.empty_form.concessionaria }}</div>
+                        <div class="col-md-2"><label class="form-label small">Tensão Atendimento</label>{{ energia_formset.empty_form.tensao_fornecimento }}</div>
+                        <div class="col-md-2"><label class="form-label small">Demanda (kW)</label>{{ energia_formset.empty_form.demanda_contratada_kw }}</div>
+                        <div class="col-md-2"><label class="form-label small">Potência Trafo (kVA)</label>{{ energia_formset.empty_form.potencia_trafo_kva }}</div>
+                        <div class="col-md-2"><label class="form-label small">Tipo Subestação</label>{{ energia_formset.empty_form.tipo_subestacao }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end mb-5">
+            <button type="submit" class="btn btn-success btn-lg px-5 shadow">
+                <i class="bi bi-check-circle me-1"></i> Gravar Cliente Completo
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Consulta genérica ao ViaCEP para qualquer bloco (Matriz ou Filial)
+function consultarViaCep(cepInput, container) {
+    const cep = cepInput.value.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+
+    const inputRua = container.querySelector('input[name$="logradouro"]');
+    const inputBairro = container.querySelector('input[name$="bairro"]');
+    const inputCidade = container.querySelector('input[name$="cidade"]');
+    const inputEstado = container.querySelector('input[name$="estado"]');
+    const inputNumero = container.querySelector('input[name$="numero"]');
+
+    if (inputRua) inputRua.value = 'Buscando...';
+    if (inputBairro) inputBairro.value = 'Buscando...';
+
+    fetch(`https://viacep.com.br/ws/${cep}/json/`)
+        .then(res => res.json())
+        .then(dados => {
+            if (!dados.erro) {
+                if (inputRua) inputRua.value = dados.logradouro;
+                if (inputBairro) inputBairro.value = dados.bairro;
+                if (inputCidade) inputCidade.value = dados.localidade;
+                if (inputEstado) inputEstado.value = dados.uf;
+                if (inputNumero) inputNumero.focus();
+            } else {
+                alert('CEP não encontrado.');
+                if (inputRua) inputRua.value = '';
+                if (inputBairro) inputBairro.value = '';
+            }
+        })
+        .catch(() => {
+            alert('Erro ao consultar ViaCEP.');
+            if (inputRua) inputRua.value = '';
+            if (inputBairro) inputBairro.value = '';
+        });
+}
+
+// Botões dinâmicos de adicionar linhas
+function attachAddButton(btnId, templateId, containerId, prefix) {
+    const btn = document.getElementById(btnId);
+    const template = document.getElementById(templateId);
+    const container = document.getElementById(containerId);
+    const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+
+    btn.addEventListener('click', function() {
+        const formCount = parseInt(totalForms.value);
+        const htmlNovo = template.innerHTML.replace(/__prefix__/g, formCount);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlNovo.trim();
+
+        const novoElemento = tempDiv.firstElementChild;
+        container.appendChild(novoElemento);
+        totalForms.value = formCount + 1;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Inicia os botões de adicionar filiais e dados elétricos
+    attachAddButton('btn-add-filial', 'filial-template', 'filiais-container', 'filiais');
+    attachAddButton('btn-add-energia', 'energia-template', 'energia-container', 'energia');
+
+    // 2. Event delegation para escutar blur em QUALQUER campo de CEP (Matriz e Filiais existentes ou novas)
+    document.addEventListener('focusout', function(e) {
+        if (e.target && e.target.name && e.target.name.endsWith('cep')) {
+            const container = e.target.closest('.filial-row') || document.getElementById('bloco-matriz');
+            if (container) {
+                consultarViaCep(e.target, container);
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
